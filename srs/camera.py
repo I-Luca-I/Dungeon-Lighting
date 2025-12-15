@@ -2,6 +2,8 @@ import pygame, math
 
 rays = 1000
 no_iterrupt_offset = 10
+light_radius = 60
+extra_light = 5
 sin_cache = []
 cos_cache = []
 for i in range(rays):
@@ -9,22 +11,22 @@ for i in range(rays):
     cos_cache.append(math.cos(i * (2 * math.pi) / rays))
 
 class Camera:
-    def __init__(self, position=(0, 0), radius=100, decay=0):
+    def __init__(self, position=(0,0), radius=light_radius, decay=0):
         self.position = position
         self.radius = radius
         self.decay = decay
 
-    def update(self, screen, room, collision_mask):
-        self.update_endpoints(room, collision_mask)
+    def update(self, screen, room, collision_mask, mask_offset):
+        self.update_endpoints(room, collision_mask, mask_offset)
         # self.draw_rays(screen)
         self.draw_mask(screen)
         self.radius = max(0, self.radius-self.decay)
 
-    def update_endpoints(self, surface, collision_mask):
+    def update_endpoints(self, surface, collision_mask, mask_offset):
         # pxarray = pygame.PixelArray(surface)
         endpoints = []
 
-        start = (self.position[0], self.position[1])
+        start = (self.position[0] - mask_offset[0], self.position[1] - mask_offset[1])
         previous_point_interrupted = False
         previous_point_distance = 0
         a = 0
@@ -77,8 +79,8 @@ class Camera:
             endpoints[i][2] = (endpoints[i-1][2] + endpoints[i][2] + endpoints[(i+1) % len(endpoints)][2]) / 3
 
         for i in range(len(endpoints)):
-            endpoints[i][1] += 10 * cos_cache[endpoints[i][0]]
-            endpoints[i][2] += 10 * sin_cache[endpoints[i][0]]
+            endpoints[i][1] += extra_light * cos_cache[endpoints[i][0]]
+            endpoints[i][2] += extra_light * sin_cache[endpoints[i][0]]
 
         self.endpoints = [(endpoints[_][1], endpoints[_][2]) for _ in range(len(endpoints))]
 
