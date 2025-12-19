@@ -14,20 +14,21 @@ import camera, mask
 # - cool ass fog
 
 pygame.init()
-bg = pygame.image.load("backgrounds/test_8.jpg")
+bg = pygame.image.load("backgrounds/test_10.jpg")
 token = pygame.image.load("backgrounds/token.png")
 screen = pygame.display.set_mode((bg.get_width(), bg.get_height()))
-shadow_surf = pygame.surface.Surface(size=(1500, 1500))
+shadow_surf = pygame.surface.Surface(size=(1500, 1500))  # serve usare una superfice ulteriore per salvare la shadow al posto dello screen, per permettere il movimento della visuale senza rompere tutto
 shadow_surf.fill((255,255,255,0))
 room = pygame.Surface((bg.get_width(), bg.get_height()))
 room.blit(bg, (0, 0))
 # setup zoom e grandezza token
 with open("settings.txt") as f:
     room_settings = f.readlines()
-    for i in range(2):
-        room_settings[i] = room_settings[i].replace("\n", "")
-room = pygame.transform.rotozoom(room, 0, (1.1)**float(room_settings[0]))
-shadow_surf = pygame.transform.rotozoom(shadow_surf, 0, (1.1)**float(room_settings[0]))
+    for line in room_settings:
+        line.replace("\n", "")
+zoom_factor = (1.1)**float(room_settings[0])
+room = pygame.transform.rotozoom(room, 0, zoom_factor)
+shadow_surf = pygame.transform.rotozoom(shadow_surf, 0, zoom_factor)
 token = pygame.transform.rotozoom(token, 0, float(room_settings[1]) / token.get_width())
 collision_mask = mask.get_collision_mask(room, {"b":35, "r":0})
 clock = pygame.time.Clock()
@@ -35,7 +36,7 @@ running = True
 moving = False
 screen_offset = [0, 0]
 
-c = camera.Camera(position=[0, 0], radius=100)
+c = camera.Camera(position=[int(int(room_settings[2])*zoom_factor), int(int(room_settings[3])*zoom_factor)], radius=100)  # posizione iniziale storata relativa all'immagine in settings.txt
 pygame.time.set_timer(pygame.USEREVENT, 200)
 
 while running:
