@@ -14,7 +14,7 @@ import camera, mask
 # - cool ass fog
 
 pygame.init()
-bg = pygame.image.load("backgrounds/test_10.jpg")
+bg = pygame.image.load("backgrounds/test_8.jpg")
 token = pygame.image.load("backgrounds/token.png")
 screen = pygame.display.set_mode((bg.get_width(), bg.get_height()))
 shadow_surf = pygame.surface.Surface(size=(1500, 1500))  # serve usare una superfice ulteriore per salvare la shadow al posto dello screen, per permettere il movimento della visuale senza rompere tutto
