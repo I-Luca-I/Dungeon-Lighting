@@ -2,7 +2,6 @@ import pygame, math
 
 rays = 1000
 no_iterrupt_offset = 10
-light_radius = 60
 extra_light = 5
 sin_cache = []
 cos_cache = []
@@ -11,7 +10,7 @@ for i in range(rays):
     cos_cache.append(math.cos(i * (2 * math.pi) / rays))
 
 class Camera:
-    def __init__(self, position=(0,0), radius=light_radius, decay=0):
+    def __init__(self, position=(0,0), radius=100, decay=0):
         self.position = position
         self.radius = radius
         self.decay = decay
