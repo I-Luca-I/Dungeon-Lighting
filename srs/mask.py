@@ -21,8 +21,3 @@ def get_collision_mask(room, thresholds):
                 collision_mask.set_at((x, y), 1)
 
     return collision_mask
-
-def check_camera_wall_collisions(camera_box_surf, collision_mask, offset):
-    pygame.draw.circle(camera_box_surf, (255, 0, 0), (camera_box_surf.get_width() // 2, camera_box_surf.get_height() // 2), camera_box_surf.get_height() // 2)
-    camera_box_mask = pygame.mask.from_threshold(camera_box_surf, (255, 0, 0), (35, 35, 35, 0))
-    return collision_mask.overlap_area(camera_box_mask, offset)

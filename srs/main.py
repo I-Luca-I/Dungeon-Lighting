@@ -51,7 +51,25 @@ screen_offset = [0, 0]
 
 pygame.time.set_timer(pygame.USEREVENT, 200)
 
+
+def center_token():
+    delta_x = int(c.position[0] / zoom_factor - screen.get_width() / 2)
+    delta_y = int(c.position[1] / zoom_factor - screen.get_height() / 2)
+    screen_offset[0] -= delta_x
+    screen_offset[1] -= delta_y
+    c.position = [c.position[0] - delta_x, c.position[1] - delta_y]
+
+
+def check_camera_wall_collisions(camera_box_surf, wall_mask, offset):
+    pygame.draw.circle(camera_box_surf, (255, 0, 0), (camera_box_surf.get_width() // 2, camera_box_surf.get_height() // 2), camera_box_surf.get_height() // 2)
+    camera_box_mask = pygame.mask.from_threshold(camera_box_surf, (255, 0, 0), (35, 35, 35, 0))
+    return wall_mask.overlap_area(camera_box_mask, offset)
+
+
+center_token()
+
 while running:
+    print(screen_offset)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -69,10 +87,11 @@ while running:
         else:
             scrolling = 0
         if moving:
-            if mask.check_camera_wall_collisions(camera_wall_coll_surf, collision_mask, (pygame.mouse.get_pos()[0] - camera_wall_coll_surf.get_width() // 2 - screen_offset[0], pygame.mouse.get_pos()[1] - camera_wall_coll_surf.get_height() // 2 - screen_offset[1])) < 5:
+            if check_camera_wall_collisions(camera_wall_coll_surf, collision_mask, (pygame.mouse.get_pos()[0] - camera_wall_coll_surf.get_width() // 2 - screen_offset[0], pygame.mouse.get_pos()[1] - camera_wall_coll_surf.get_height() // 2 - screen_offset[1])) < 5:
                 c.position = list(pygame.mouse.get_pos())
         if event.type == pygame.KEYDOWN:
-            pass
+            if event.key == pygame.K_t:
+                center_token()
 
     c.update(shadow_surf, room, collision_mask, screen_offset)
     mask.get_shadow(shadow_surf, room, screen_offset)
