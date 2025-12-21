@@ -1,39 +1,88 @@
 import pygame
-import camera, mask
-
-# TODO - importanti:
-# - cancellare raggi isolati (errori)
-# - pedina
-# - zoom
-# - salvataggio luce
-
-# TODO - sarebbe figo:
-# - doors
-# - collisioni
-# - raytracing
-# - cool ass fog
+import pawn, mask
 
 pygame.init()
+
+# creazione superfici
 bg = pygame.image.load("backgrounds/test_8.jpg")
-screen = pygame.display.set_mode((bg.get_width(), bg.get_height()))
+camera = pygame.display.set_mode((1500, 1500))
+screen = pygame.surface.Surface(size=(bg.get_width(), bg.get_height()))  # serve usare una superfice ulteriore per salvare la shadow al posto dello screen, per permettere il movimento della visuale senza rompere tutto
+screen.fill((255, 255, 255, 0))
 room = pygame.Surface((bg.get_width(), bg.get_height()))
 room.blit(bg, (0, 0))
+
+# setup zoom e grandezza token
+with open("srs/settings.txt") as f:
+    room_settings = f.readlines()
+    for line in room_settings:
+        line.replace("\n", "")
+zoom_factor = 1.1**float(room_settings[0])
+room = pygame.transform.rotozoom(room, 0, zoom_factor)
+screen = pygame.transform.rotozoom(screen, 0, zoom_factor)
+
+# creazione maschera degli ostacoli alla luce e movimento
 collision_mask = mask.get_collision_mask(room, {"b":35, "r":0})
+
 clock = pygame.time.Clock()
 running = True
 
-c = camera.Camera(position=(640, 360), radius=100)
-pygame.time.set_timer(pygame.USEREVENT, 200)
+party = pawn.Pawn(
+    position=[int(int(room_settings[2])*zoom_factor), int(int(room_settings[3])*zoom_factor)], 
+    radius=100,
+    img="backgrounds/token.png",
+    size=float(room_settings[1]),
+    zoom_factor=zoom_factor
+)  # posizione iniziale storata relativa all'immagine in settings.txt
+
+scrolling = False
+camera_offset = [0, 0]
+party.center_to_camera(camera, camera_offset)
 
 while running:
+    print(camera_offset)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        
+        # Party movement
+        if (
+            event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 
+            (party.position[0] - party.texture.get_width() // 2) < pygame.mouse.get_pos()[0] < (party.position[0] + party.texture.get_width() // 2) and 
+            (party.position[1] - party.texture.get_height() // 2) < pygame.mouse.get_pos()[1] < (party.position[1] + party.texture.get_height() // 2)
+        ):
+            party.moving = True
+            party.mouse_offset = [party.position[0] - pygame.mouse.get_pos()[0], party.position[1] - pygame.mouse.get_pos()[1]]
+        elif (
+            event.type == pygame.MOUSEBUTTONUP and event.button == 1
+        ):
+            party.moving = False
 
-    screen.blit(bg, (0, 0))
-    c.position = pygame.mouse.get_pos()
-    c.update(screen, room, collision_mask)
-    screen = mask.get_shadow(screen, room)
+        if party.moving:
+            if (party.update_collision(collision_mask, (pygame.mouse.get_pos()[0] - party.hitbox_surface.get_width() // 2 - camera_offset[0], pygame.mouse.get_pos()[1] - party.hitbox_surface.get_height() // 2 - camera_offset[1]))) < 50:
+                party.position = (pygame.mouse.get_pos()[0] + party.mouse_offset[0], pygame.mouse.get_pos()[1] + party.mouse_offset[1])
+        
+        # Screen scrolling
+        if pygame.mouse.get_pressed()[0] and not party.moving:
+            if not scrolling:
+                scrolling = not scrolling
+                last_offset = camera_offset
+                last_pos = pygame.mouse.get_pos()
+                last_c_pos = party.position
+            else:
+                camera_offset = [last_offset[0] + (pygame.mouse.get_pos()[0] - last_pos[0]), last_offset[1] + (pygame.mouse.get_pos()[1] - last_pos[1])]
+                party.position = [last_c_pos[0] + (pygame.mouse.get_pos()[0] - last_pos[0]), last_c_pos[1] + (pygame.mouse.get_pos()[1] - last_pos[1])]
+        else:
+            scrolling = 0
+
+        if event.type == pygame.KEYDOWN:
+            # Center to party
+            if event.key == pygame.K_t:
+                party.center_to_camera(camera, camera_offset)
+
+    party.update(screen, room, collision_mask, camera_offset)
+    mask.get_shadow(screen, room, camera_offset)
+    camera.blit(screen, (0, 0))
+    party.draw(camera, camera_offset)
 
     pygame.display.flip()
     clock.tick(60)
