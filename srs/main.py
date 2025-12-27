@@ -12,7 +12,7 @@ room = pygame.Surface((bg.get_width(), bg.get_height()))
 room.blit(bg, (0, 0))
 
 # caricamento impostazioni
-with open("srs/settings.json", "r") as file:
+with open("settings.json", "r") as file:
     room_settings = json.load(file)
 
 zoom_factor = 1.1**float(room_settings["zoom_exponent"])
@@ -36,6 +36,22 @@ party = pawn.Pawn(
 scrolling = False
 camera_offset = [0, 0]
 party.center_to_camera(camera, camera_offset)
+
+save_num = room_settings["save_number"]
+def save():
+    global save_num
+    save_num += 1
+    settings = {
+        "zoom_exponent": room_settings["zoom_exponent"],
+        "token_relative_size": room_settings["token_relative_size"],
+        "starting_coords": room_settings["starting_coords"],
+        "save_number": save_num
+    }
+    with open("settings.json", "w") as f:
+        json.dump(settings, f)
+    save_surf = mask.get_save_surface(room.convert_alpha())
+    pygame.image.save(save_surf, f"saves/save{save_num}.png")
+
 
 while running:
     print(camera_offset)
@@ -77,6 +93,9 @@ while running:
             # Center to party
             if event.key == pygame.K_t:
                 party.center_to_camera(camera, camera_offset)
+            # Discovered map saving
+            if event.key == pygame.K_s:
+                save()
 
     party.update(screen, room, collision_mask, camera_offset)
     mask.get_shadow(screen, room, camera_offset, (party.position[0] - camera_offset[0], party.position[1] - camera_offset[1]), party.radius, party)
@@ -88,4 +107,5 @@ while running:
     clock.tick(60)
     print(clock.get_fps())
 
+save()
 pygame.quit()

@@ -31,3 +31,8 @@ def get_collision_mask(room, thresholds):
                 collision_mask.set_at((x, y), 1)
 
     return collision_mask
+
+def get_save_surface(room):
+    save_mask = pygame.mask.Mask(size=(10000, 10000))
+    save_mask.draw(light_mask, (0,0))
+    return save_mask.to_surface(unsetcolor=(50,50,50), setsurface=room, dest=(0,0))
