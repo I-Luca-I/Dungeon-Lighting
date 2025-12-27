@@ -78,13 +78,14 @@ class Pawn:
             if (not(interrupt)):
                 endpoints.append([a, end[0], end[1]])
 
-            if (not(previous_point_interrupted) and interrupt):
-                a -= previous_point_distance - 1 
-            else:
-                a += 1 if interrupt else no_iterrupt_offset
+            # if (not(previous_point_interrupted) and interrupt):
+            #     a -= previous_point_distance - 1 
+            # else:
+            #     a += 1 if interrupt else no_iterrupt_offset
+            a += 1 if interrupt else no_iterrupt_offset
 
-            previous_point_interrupted = interrupt            
-            previous_point_distance = 1 if interrupt else no_iterrupt_offset
+            # previous_point_interrupted = interrupt            
+            # previous_point_distance = 1 if interrupt else no_iterrupt_offset
         
         endpoints.sort()
         for i in range(len(endpoints)):
@@ -104,12 +105,12 @@ class Pawn:
             if (math.sqrt((self.endpoints[i][0] - self.endpoints[(i+1)%len(self.endpoints)][0])**2 + (self.endpoints[i][1] - self.endpoints[(i+1)%len(self.endpoints)][1])**2) > 7):
                 id += 1
 
-        for ids in range(0, id):
-            print(self.endpoints_id)
-            print(self.endpoints_id.count(ids))
-            while (self.endpoints_id.count(ids) < 50 and self.endpoints_id.count(ids) > 0):
-                self.endpoints.pop(self.endpoints_id.index(ids))
-                self.endpoints_id.pop(self.endpoints_id.index(ids))
+        # for ids in range(0, id):
+        #     print(self.endpoints_id)
+        #     print(self.endpoints_id.count(ids))
+        #     while (self.endpoints_id.count(ids) < 50 and self.endpoints_id.count(ids) > 0):
+        #         self.endpoints.pop(self.endpoints_id.index(ids))
+        #         self.endpoints_id.pop(self.endpoints_id.index(ids))
 
     def draw_rays(self, surface, offset=(0,0)):
         for i in range(len(self.endpoints)):

@@ -1,4 +1,4 @@
-import pygame
+import pygame, json
 import pawn, mask
 
 pygame.init()
@@ -11,12 +11,11 @@ screen.fill((255, 255, 255, 0))
 room = pygame.Surface((bg.get_width(), bg.get_height()))
 room.blit(bg, (0, 0))
 
-# setup zoom e grandezza token
-with open("settings.txt") as f:
-    room_settings = f.readlines()
-    for line in room_settings:
-        line.replace("\n", "")
-zoom_factor = 1.1**float(room_settings[0])
+# caricamento impostazioni
+with open("srs/settings.json", "r") as file:
+    room_settings = json.load(file)
+
+zoom_factor = 1.1**float(room_settings["zoom_exponent"])
 room = pygame.transform.rotozoom(room, 0, zoom_factor)
 screen = pygame.transform.rotozoom(screen, 0, zoom_factor)
 
@@ -27,10 +26,10 @@ clock = pygame.time.Clock()
 running = True
 
 party = pawn.Pawn(
-    position=[int(int(room_settings[2])*zoom_factor), int(int(room_settings[3])*zoom_factor)], 
+    position=[int(int(room_settings["starting_coords"][0])*zoom_factor), int(int(room_settings["starting_coords"][1])*zoom_factor)], 
     radius=100,
     img="backgrounds/token.png",
-    size=float(room_settings[1]),
+    size=float(room_settings["token_relative_size"]),
     zoom_factor=zoom_factor
 )  # posizione iniziale storata relativa all'immagine in settings.txt
 
@@ -80,9 +79,10 @@ while running:
                 party.center_to_camera(camera, camera_offset)
 
     party.update(screen, room, collision_mask, camera_offset)
-    mask.get_shadow(screen, room, camera_offset, (party.position[0] - camera_offset[0], party.position[1] - camera_offset[1]), party.radius)
+    mask.get_shadow(screen, room, camera_offset, (party.position[0] - camera_offset[0], party.position[1] - camera_offset[1]), party.radius, party)
     camera.blit(screen, (0, 0))
     party.draw(camera, camera_offset)
+    mask.reset_shadow((party.position[0] - camera_offset[0], party.position[1] - camera_offset[1]), party.radius)
 
     pygame.display.flip()
     clock.tick(60)
