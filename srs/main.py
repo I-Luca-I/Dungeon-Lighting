@@ -4,15 +4,15 @@ import pawn, mask
 pygame.init()
 
 # creazione superfici
-bg = pygame.image.load("backgrounds/test_8.jpg")
-camera = pygame.display.set_mode((1500, 1500))
+bg = pygame.image.load("backgrounds/test_9.jpg")
+camera = pygame.display.set_mode((1920, 1080))
 screen = pygame.surface.Surface(size=(bg.get_width(), bg.get_height()))  # serve usare una superfice ulteriore per salvare la shadow al posto dello screen, per permettere il movimento della visuale senza rompere tutto
 screen.fill((255, 255, 255, 0))
 room = pygame.Surface((bg.get_width(), bg.get_height()))
 room.blit(bg, (0, 0))
 
 # setup zoom e grandezza token
-with open("srs/settings.txt") as f:
+with open("settings.txt") as f:
     room_settings = f.readlines()
     for line in room_settings:
         line.replace("\n", "")
@@ -80,7 +80,7 @@ while running:
                 party.center_to_camera(camera, camera_offset)
 
     party.update(screen, room, collision_mask, camera_offset)
-    mask.get_shadow(screen, room, camera_offset)
+    mask.get_shadow(screen, room, camera_offset, (party.position[0] - camera_offset[0], party.position[1] - camera_offset[1]), party.radius)
     camera.blit(screen, (0, 0))
     party.draw(camera, camera_offset)
 

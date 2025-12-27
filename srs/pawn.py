@@ -3,7 +3,7 @@ import pygame, math
 
 rays = 1000
 no_iterrupt_offset = 10
-extra_light = 5
+extra_light = 3
 sin_cache = []
 cos_cache = []
 for i in range(rays):
