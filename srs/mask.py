@@ -1,8 +1,15 @@
 import pygame
+import json
+
+with open("settings.json", "r") as file:
+    room_settings = json.load(file)
+
+saved_img = pygame.image.load(f"saves/save{room_settings['save_number']}.png")
 
 light_mask = pygame.mask.Mask(size=(15000, 15000), fill=False)
-screen_mask = pygame.mask.Mask(size=(15000, 15000), fill=True)
+screen_mask = pygame.mask.from_threshold(saved_img, (50, 50, 50), (1, 1, 1, 1))
 light_texture_surface = pygame.Surface((15000, 15000), pygame.SRCALPHA)
+light_texture_surface.blit(screen_mask.to_surface(unsetcolor=(0, 0, 0, 150), setcolor=(0, 0, 0)), (0, 0))
 
 def get_shadow(screen, room, room_dest, light_text_dest, light_radius, pawn):
     # screen_mask = pygame.mask.from_surface(screen)
@@ -13,7 +20,7 @@ def get_shadow(screen, room, room_dest, light_text_dest, light_radius, pawn):
     # pygame.draw.circle(light_texture_surface, (0, 0, 0, 150), light_text_dest, radius=light_radius*.9)
     pygame.draw.polygon(light_texture_surface, (0, 0, 0, 100), pawn.endpoints)
     unsetsurface.blit(light_texture_surface, (0,0))
-    screen_mask.to_surface(surface=screen, setcolor=(0, 0, 0), unsetsurface=(unsetsurface), dest=room_dest)
+    screen_mask.to_surface(surface=screen, setcolor=(0, 0, 0), unsetsurface=unsetsurface, dest=room_dest)
     # screen_mask.to_surface(surface=screen, setsurface=room, unsetsurface=room, dest=room_dest)
 
 def reset_shadow(light_text_dest, light_radius):
@@ -33,6 +40,6 @@ def get_collision_mask(room, thresholds):
     return collision_mask
 
 def get_save_surface(room):
-    save_mask = pygame.mask.Mask(size=(10000, 10000))
+    save_mask = pygame.mask.Mask(size=(15000, 15000))
     save_mask.draw(light_mask, (0,0))
     return save_mask.to_surface(unsetcolor=(50,50,50), setsurface=room, dest=(0,0))
