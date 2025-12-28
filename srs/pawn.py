@@ -33,7 +33,7 @@ class Pawn:
 
     def draw(self, surface, offset):
         surface.blit(self.texture, (self.position[0] - self.texture.get_width() // 2, self.position[1] - self.texture.get_height() // 2))
-        self.draw_rays(surface, offset)
+        # self.draw_rays(surface, offset)
 
     def update_endpoints(self, surface, collision_mask, mask_offset):
         # pxarray = pygame.PixelArray(surface)
