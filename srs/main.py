@@ -4,8 +4,9 @@ import pawn, mask
 pygame.init()
 
 # creazione superfici
-bg = pygame.image.load("backgrounds/test_9.jpg")
-camera = pygame.display.set_mode((1920, 1080))
+bg_name = "test_13"
+bg = pygame.image.load(f"backgrounds/{bg_name}.png")
+camera = pygame.display.set_mode((500, 500))
 screen = pygame.surface.Surface(size=(bg.get_width(), bg.get_height()))  # serve usare una superfice ulteriore per salvare la shadow al posto dello screen, per permettere il movimento della visuale senza rompere tutto
 screen.fill((255, 255, 255, 0))
 room = pygame.Surface((bg.get_width(), bg.get_height()))
@@ -22,15 +23,18 @@ screen = pygame.transform.rotozoom(screen, 0, zoom_factor)
 # Cursore fighissimo pazzo
 cursore_0_img = pygame.image.load("backgrounds/cursor0.png")
 cursore_0_img = pygame.transform.rotozoom(cursore_0_img, 315, (100/cursore_0_img.get_width())*zoom_factor)
-cursore0 = pygame.cursors.Cursor((20, 20), cursore_0_img)
+cursore0 = pygame.cursors.Cursor((10, 40), cursore_0_img)
 cursore_1_img = pygame.image.load("backgrounds/cursor1.png")
 cursore_1_img = pygame.transform.rotozoom(cursore_1_img, 315, (100/cursore_1_img.get_width())*zoom_factor)
-cursore1 = pygame.cursors.Cursor((20, 20), cursore_1_img)
+cursore1 = pygame.cursors.Cursor((10, 40), cursore_1_img)
 cursori = [cursore0, cursore1]
 pygame.mouse.set_cursor(cursori[0])
 
-# creazione maschera degli ostacoli alla luce e movimento
+# creazione maschera degli ostacoli alla luce e movimento e maschera porte
 collision_mask = mask.get_collision_mask(room, {"b":35, "r":0})
+door_surf = pygame.image.load(f"backgrounds/{bg_name}_doors.png")
+door_mask = mask.get_door_mask(door_surf)
+door_test = door_mask.to_surface(unsetcolor=None)
 
 clock = pygame.time.Clock()
 running = True
@@ -64,7 +68,6 @@ def save():
 
 
 while running:
-    print(camera_offset)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -84,7 +87,6 @@ while running:
             pygame.mouse.set_cursor(cursori[0])
 
         if party.moving:
-            pygame.mouse.set_cursor(cursori[1])
             if (party.update_collision(collision_mask, (pygame.mouse.get_pos()[0] - party.hitbox_surface.get_width() // 2 - camera_offset[0], pygame.mouse.get_pos()[1] - party.hitbox_surface.get_height() // 2 - camera_offset[1]))) < 50:
                 party.position = (pygame.mouse.get_pos()[0] + party.mouse_offset[0], pygame.mouse.get_pos()[1] + party.mouse_offset[1])
         
@@ -96,11 +98,16 @@ while running:
                 last_pos = pygame.mouse.get_pos()
                 last_c_pos = party.position
             else:
-                pygame.mouse.set_cursor(cursori[1])
                 camera_offset = [last_offset[0] + (pygame.mouse.get_pos()[0] - last_pos[0]), last_offset[1] + (pygame.mouse.get_pos()[1] - last_pos[1])]
                 party.position = [last_c_pos[0] + (pygame.mouse.get_pos()[0] - last_pos[0]), last_c_pos[1] + (pygame.mouse.get_pos()[1] - last_pos[1])]
         else:
             scrolling = 0
+
+        if pygame.mouse.get_pressed()[0]:
+            pygame.mouse.set_cursor(cursori[1])
+
+        if pygame.mouse.get_pressed()[0] and mask.check_door_click(door_mask, (pygame.mouse.get_pos()[0] - camera_offset[0], pygame.mouse.get_pos()[1] - camera_offset[1])):
+            print("!")  # TODO: creare una variabile doors (dizionario/lista di maschere?) con cui utilizzare le singole doors e rendere door_mask esistente solo in mask.py
 
         if event.type == pygame.KEYDOWN:
             # Center to party
@@ -115,6 +122,7 @@ while running:
     camera.blit(screen, (0, 0))
     party.draw(camera, camera_offset)
     mask.reset_shadow((party.position[0] - camera_offset[0], party.position[1] - camera_offset[1]), party.radius)
+    camera.blit(door_test, camera_offset)
 
     pygame.display.flip()
     clock.tick(60)

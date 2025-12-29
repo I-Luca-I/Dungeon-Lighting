@@ -43,3 +43,11 @@ def get_save_surface(room):
     save_mask = pygame.mask.Mask(size=(15000, 15000), fill=True)
     save_mask.erase(screen_mask, (0,0))
     return save_mask.to_surface(unsetcolor=(50,50,50), setsurface=room, dest=(0,0))
+
+def get_door_mask(door_surf):
+    door_mask = pygame.mask.Mask(size=(15000, 15000), fill=False)
+    door_mask.draw(pygame.mask.from_threshold(door_surf, (0, 0, 255), (1, 1, 1, 1)), (0, 0))
+    return door_mask
+
+def check_door_click(door_mask, pos):
+    return door_mask.get_at(pos) # and light_mask.get_at(pos)
