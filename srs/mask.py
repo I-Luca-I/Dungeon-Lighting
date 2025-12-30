@@ -49,5 +49,33 @@ def get_door_mask(door_surf):
     door_mask.draw(pygame.mask.from_threshold(door_surf, (0, 0, 255), (1, 1, 1, 1)), (0, 0))
     return door_mask
 
+def get_doors(door_surf, door_mask):
+    doors = {}
+    max_door_size = (200, 200)
+    disposable_mask = pygame.mask.Mask(size=(20, 20), fill=True)
+    last_size = [20,20]
+    temp_size = [25,25]
+    for i in range(door_surf.get_height() // 20):
+        for j in range(door_surf.get_width() // 20):
+            if door_mask.overlap_area(disposable_mask, (j * 20, i * 20)) > 5:
+                while door_mask.overlap_area(pygame.mask.Mask(temp_size, fill=True), (j * 20, i * 20)) > door_mask.overlap_area(pygame.mask.Mask(last_size, fill=True), (j * 20, i * 20)):
+                    last_size = temp_size
+                    temp_size = [temp_size[0] + 1, temp_size[1] + 1]
+                door = pygame.mask.Mask(size=temp_size, fill=False)
+                door.draw(door_mask, (j * 20, i * 20))
+                doors.update({(j * 20, i * 20): door})
+                last_size = [20,20]
+                temp_size = [20,20]
+
+    temp_doors = doors
+    for key1 in doors:
+        for key2 in doors:
+            if doors[key2].overlap_area(doors[key1], (key1[0]-key2[0], key1[1]-key2[1])) > 0:
+                doors[key1].draw(doors[key2], (key1[0]-key2[0], key1[1]-key2[1]))
+                temp_doors.pop(key2)
+    doors = temp_doors
+
+    return doors
+
 def check_door_click(door_mask, pos):
-    return door_mask.get_at(pos) # and light_mask.get_at(pos)
+    return door_mask.get_at(pos) and not screen_mask.get_at(pos)

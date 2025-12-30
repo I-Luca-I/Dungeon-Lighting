@@ -6,7 +6,7 @@ pygame.init()
 # creazione superfici
 bg_name = "test_13"
 bg = pygame.image.load(f"backgrounds/{bg_name}.png")
-camera = pygame.display.set_mode((500, 500))
+camera = pygame.display.set_mode((1000, 500))
 screen = pygame.surface.Surface(size=(bg.get_width(), bg.get_height()))  # serve usare una superfice ulteriore per salvare la shadow al posto dello screen, per permettere il movimento della visuale senza rompere tutto
 screen.fill((255, 255, 255, 0))
 room = pygame.Surface((bg.get_width(), bg.get_height()))
@@ -33,8 +33,14 @@ pygame.mouse.set_cursor(cursori[0])
 # creazione maschera degli ostacoli alla luce e movimento e maschera porte
 collision_mask = mask.get_collision_mask(room, {"b":35, "r":0})
 door_surf = pygame.image.load(f"backgrounds/{bg_name}_doors.png")
+door_surf = pygame.transform.rotozoom(door_surf, 0, zoom_factor)
 door_mask = mask.get_door_mask(door_surf)
-door_test = door_mask.to_surface(unsetcolor=None)
+doors = mask.get_doors(door_surf, door_mask)
+print(doors)
+door_test_surf = door_mask.to_surface(unsetcolor=None)
+for key in doors:
+    door_test_surf.blit(doors[key].to_surface(unsetcolor=None, setcolor=(0,0,255)), key)
+
 
 clock = pygame.time.Clock()
 running = True
@@ -49,9 +55,10 @@ party = pawn.Pawn(
 
 scrolling = False
 camera_offset = [0, 0]
-party.center_to_camera(camera, camera_offset)
+# party.center_to_camera(camera, camera_offset)
 
 save_num = room_settings["save_number"]
+
 def save():
     global save_num
     save_num += 1
@@ -107,7 +114,9 @@ while running:
             pygame.mouse.set_cursor(cursori[1])
 
         if pygame.mouse.get_pressed()[0] and mask.check_door_click(door_mask, (pygame.mouse.get_pos()[0] - camera_offset[0], pygame.mouse.get_pos()[1] - camera_offset[1])):
-            print("!")  # TODO: creare una variabile doors (dizionario/lista di maschere?) con cui utilizzare le singole doors e rendere door_mask esistente solo in mask.py
+            print("!")
+
+
 
         if event.type == pygame.KEYDOWN:
             # Center to party
@@ -122,7 +131,7 @@ while running:
     camera.blit(screen, (0, 0))
     party.draw(camera, camera_offset)
     mask.reset_shadow((party.position[0] - camera_offset[0], party.position[1] - camera_offset[1]), party.radius)
-    camera.blit(door_test, camera_offset)
+    camera.blit(door_test_surf, camera_offset)
 
     pygame.display.flip()
     clock.tick(60)
