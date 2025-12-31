@@ -35,11 +35,12 @@ collision_mask = mask.get_collision_mask(room, {"b":35, "r":0})
 door_surf = pygame.image.load(f"backgrounds/{bg_name}_doors.png")
 door_surf = pygame.transform.rotozoom(door_surf, 0, zoom_factor)
 door_mask = mask.get_door_mask(door_surf)
-doors = mask.get_doors(door_surf, door_mask)
-print(doors)
+
 door_test_surf = door_mask.to_surface(unsetcolor=None)
-for key in doors:
-    door_test_surf.blit(doors[key].to_surface(unsetcolor=None, setcolor=(0,0,255)), key)
+doors = mask.get_doors(door_surf, door_mask, door_test_surf)
+print(doors)
+#for key in doors:
+#    door_test_surf.blit(doors[key].to_surface(unsetcolor=None, setcolor=(0,0,255)), key)
 
 
 clock = pygame.time.Clock()
