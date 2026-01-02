@@ -71,6 +71,11 @@ class Game:
             self.clock.tick(60)
             
             self.zoom_factor = 1.1 ** self.zoom_exponent
+            if (pygame.display.get_surface().get_width() > self.dungeon.get_width()*self.zoom_factor or pygame.display.get_surface().get_height() > self.dungeon.get_height()*self.zoom_factor):
+                self.zoom_exponent += 1
+                self.zoom_factor = 1.1 ** self.zoom_exponent
+            self.camera_offset[0] = min(0, max(self.camera_offset[0], pygame.display.get_surface().get_width()-self.dungeon.get_width()*self.zoom_factor))
+            self.camera_offset[1] = min(0, max(self.camera_offset[1], pygame.display.get_surface().get_height()-self.dungeon.get_height()*self.zoom_factor))
 
             buffer = pygame.surface.Surface(size=(self.dungeon.get_width(), self.dungeon.get_height()), flags=pygame.SRCALPHA)
             buffer.blit(source=self.dungeon, dest=(0, 0))
@@ -147,7 +152,7 @@ class Game:
                     self.zoom_exponent += 1
                 else:
                     self.zoom_exponent -= 1
-
+                
     def move_camera(self, coords:pygame.Vector2) -> None:
         self.camera_offset[0] = pygame.display.get_surface().get_width()//2 - coords[0]*self.zoom_factor
         self.camera_offset[1] = pygame.display.get_surface().get_height()//2 - coords[1]*self.zoom_factor

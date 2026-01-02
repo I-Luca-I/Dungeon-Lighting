@@ -29,6 +29,8 @@ class Pawn:
         self.mouse_offset = [0, 0]      
 
     def update(self, collision_mask:pygame.Mask) -> None:
+        self.position[0] = max(0, min(self.position[0], collision_mask.get_size()[0]-1))
+        self.position[1] = max(0, min(self.position[1], collision_mask.get_size()[1]-1))
         self.update_endpoints(collision_mask)
 
     def update_endpoints(self, collision_mask:pygame.Mask) -> None:
