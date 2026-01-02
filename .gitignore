@@ -4,7 +4,7 @@ venv/
 # User-specific data
 saves/
 local/
-local.*
+local*
 
 # Cache
 __pycache__/

@@ -1,23 +1,31 @@
-import pygame, json
+import pygame, json, os, datetime
 from . import pawn, mask
 
 class Game:
-    def __init__(self) -> None:
-        ### Load data (REDO)
-        with open("config/default.json", "r") as file:
-            settings = json.load(file)
+    def __init__(self, id:int) -> None:
+        self.id = id
+
+        ### Load local data
+        settings = self.load_config(self.id)
+        dungeon_img = pygame.image.load(f"assets/local/dungeon_{id}.png")
+        doors_img = pygame.image.load(f"assets/local/doors_{id}.png")
+        saves = os.listdir(f"saves/dungeon_{id}")
+        saves.sort(reverse=True)
+        print(saves[0])
+        if (len(saves) > 0):
+            light_mask_img = pygame.image.load(f"saves/dungeon_{id}/{saves[0]}")
+        
+        ### Load absolute data
         cursor_normal_img = pygame.image.load("assets/cursor_normal.png")
         cursor_interact_img = pygame.image.load("assets/cursor_interact.png")
-        dungeon_img = pygame.image.load("assets/local/dungeon.png")
-        doors_img = pygame.image.load("assets/local/doors.png")
-
+        
         ### Pygame setup
         pygame.display.set_mode(
             size=(500, 500)
         )
         self.clock = pygame.time.Clock()
         self.running = True
-        self.debug_mode = True
+        self.debug_mode = bool(settings["debug_mode"])
 
         ### Game setup
         cursor_normal_img = pygame.transform.rotozoom(cursor_normal_img, 315, 100/cursor_normal_img.get_width())
@@ -29,19 +37,17 @@ class Game:
         pygame.mouse.set_cursor(self.cursors["normal"])
 
         self.party = pawn.Pawn(
-            position=settings["starting_coords"],
-            radius=100,
+            position=settings["party_position"],
+            radius=settings["party_radius"],
             img=pygame.image.load("assets/token.png"),
-            size=float(settings["token_relative_size"]),
+            size=float(settings["party_size"]),
         )
-
-        self.save_num = settings["save_number"] # REDO
 
         ### Camera
         self.zoom_exponent = int(settings["zoom_exponent"])
         self.zoom_factor = 1.1 ** self.zoom_exponent
         self.scrolling = False
-        self.camera_offset = pygame.Vector2(0, 0)
+        self.camera_offset = pygame.Vector2(settings["camera_offset"])
 
         ### Surfaces
         self.dungeon = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))
@@ -50,9 +56,12 @@ class Game:
 
         ### Masks
         self.collision_mask = mask.Masks.get_collision_mask(self.dungeon, pygame.Color(0, 0, 35))
-        self.light_mask = pygame.mask.Mask(size=self.dungeon.get_size(), fill=False)
-        door_mask = mask.get_door_mask(self.doors) ### REDO
-        self.doors = mask.get_doors(self.doors, door_mask) ### REDO
+        if (len(saves) == 0):
+            self.light_mask = pygame.mask.Mask(size=self.dungeon.get_size(), fill=False)
+        else:
+            light_surface = pygame.surface.Surface(size=self.dungeon.get_size())
+            light_surface.blit(light_mask_img, (0, 0))
+            self.light_mask = pygame.mask.from_threshold(surface=light_surface, color=(255, 255, 255), threshold=(1, 1, 1))
     
     def run(self) -> None:
         while self.running:
@@ -126,7 +135,7 @@ class Game:
                 
                 ### Manual save
                 if event.key == pygame.K_s:
-                    self.save()
+                    self.save(self.id)
                 
                 ### Debug mode
                 if event.key == pygame.K_F4:
@@ -143,27 +152,37 @@ class Game:
         self.camera_offset[0] = pygame.display.get_surface().get_width()//2 - coords[0]*self.zoom_factor
         self.camera_offset[1] = pygame.display.get_surface().get_height()//2 - coords[1]*self.zoom_factor
 
-    def save(self): ### REDO REDO REDO
-        self.save_num += 1
-        with open("config/default.json", "r") as file:
-            settings = json.load(file)
+    def save(self, id:int) -> None:
+        settings = self.load_config(id)
 
         settings = {
-            "zoom_exponent": settings["zoom_exponent"],
-            "token_relative_size": settings["token_relative_size"],
-            "starting_coords": settings["starting_coords"],
-            "save_number": self.save_num
+            "zoom_exponent": self.zoom_exponent,
+            "party_size": settings["party_size"],
+            "party_position": [self.party.position[0], self.party.position[1]],
+            "party_radius": self.party.radius,
+            "camera_offset": [self.camera_offset[0], self.camera_offset[1]],
+            "debug_mode": self.debug_mode
         }
 
-        with open("config/default.json", "w") as file:
+        with open(f"config/local_{id}.json", "w") as file:
             json.dump(settings, file)
-        
-        save_surf = mask.get_save_surface(self.dungeon.convert_alpha())
-        pygame.image.save(save_surf, f"saves/save_{self.save_num}.png")
 
-    def load(self): ### REDO
-        pass
+        try:
+            os.mkdir(f"saves/dungeon_{id}")
+        finally:
+            save_surface = self.light_mask.to_surface()
+            pygame.image.save(save_surface, f"saves/dungeon_{id}/{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')}_light_mask.png")
+
+    def load_config(self, id:int) -> dict:
+        try:
+            with open(f"config/local_{id}.json", "r") as file:
+                settings = json.load(file)
+        except FileNotFoundError:
+            with open("config/default.json", "r") as file:
+                settings = json.load(file)
+        finally:
+            return settings
 
     def quit(self) -> None:
-        self.save()
+        self.save(self.id)
         pygame.quit()

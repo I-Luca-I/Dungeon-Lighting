@@ -1,1 +1,8 @@
-{"zoom_exponent": 10, "token_relative_size": 30, "starting_coords": [20, 20], "save_number": 38}
+{
+    "zoom_exponent": 3,
+    "party_size": 30,
+    "party_position": [20, 20],
+    "party_radius": 100,
+    "camera_offset": [0, 0],
+    "debug_mode": 0
+}
