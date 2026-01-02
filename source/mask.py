@@ -35,8 +35,8 @@ def get_collision_mask(room, thresholds):
 
     for x in range(room.get_width()):
         for y in range(room.get_height()):
-            if (room.unmap_rgb(pxarray[x][y])[1] >= room.unmap_rgb(pxarray[x][y])[2] + thresholds["b"] and
-                room.unmap_rgb(pxarray[x][y])[1] >= room.unmap_rgb(pxarray[x][y])[0] + thresholds["r"]
+            if (room.unmap_rgb(pxarray[x][y])[1] >= room.unmap_rgb(pxarray[x][y])[2] + thresholds["b"] and # type: ignore
+                room.unmap_rgb(pxarray[x][y])[1] >= room.unmap_rgb(pxarray[x][y])[0] + thresholds["r"]     # type: ignore
                 ):
                 collision_mask.set_at((x, y), 1)
 
