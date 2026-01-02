@@ -1,5 +1,5 @@
 import pygame, json, os, datetime
-from . import pawn, mask
+from . import pawn, mask, door
 
 class Game:
     def __init__(self, id:int) -> None:
@@ -11,8 +11,8 @@ class Game:
         doors_img = pygame.image.load(f"assets/local/doors_{id}.png")
         saves = os.listdir(f"saves/dungeon_{id}")
         saves.sort(reverse=True)
-        print(saves[0])
         if (len(saves) > 0):
+            print(saves[0])
             light_mask_img = pygame.image.load(f"saves/dungeon_{id}/{saves[0]}")
         
         ### Load absolute data
@@ -52,7 +52,7 @@ class Game:
         ### Surfaces
         self.dungeon = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))
         self.dungeon.blit(dungeon_img, (0, 0))
-        self.doors = pygame.transform.rotozoom(surface=doors_img, angle=0, scale=self.zoom_factor) # REDO
+        self.door_surface = pygame.transform.rotozoom(surface=doors_img, angle=0, scale=self.zoom_factor)
 
         ### Masks
         self.collision_mask = mask.Masks.get_collision_mask(self.dungeon, pygame.Color(0, 0, 35))
@@ -62,6 +62,8 @@ class Game:
             light_surface = pygame.surface.Surface(size=self.dungeon.get_size())
             light_surface.blit(light_mask_img, (0, 0))
             self.light_mask = pygame.mask.from_threshold(surface=light_surface, color=(255, 255, 255), threshold=(1, 1, 1))
+        self.door_mask = door.Door.get_door_mask(self.door_surface)
+        self.doors = door.Door.get_doors(self.door_mask)
     
     def run(self) -> None:
         while self.running:
@@ -93,6 +95,7 @@ class Game:
             mask.Masks.update_light(self.light_mask, self.party)
             mask.Masks.draw_light(buffer, self.light_mask, self.party)
             self.party.draw(buffer, self.debug_mode)
+
 
             if (self.debug_mode):
                 pygame.draw.circle(buffer, (0,255,0), self.mouse_coords, 1, 1)
@@ -131,6 +134,17 @@ class Game:
                     self.camera_offset = self.start_camera_offset + pygame.mouse.get_pos() - self.start_mouse_pos
             else:
                 self.scrolling = False
+
+            ### Door interaction
+            if pygame.mouse.get_pressed()[0] and door.Door.check_door_click(self.door_mask, self.light_mask, (pygame.mouse.get_pos()[0] - self.camera_offset[0], pygame.mouse.get_pos()[1] - self.camera_offset[1])) and not self.party.moving:
+                print("!")
+                closest_door = self.doors[0]
+                smaller_distance = abs(pygame.mouse.get_pos()[0] - self.camera_offset[0] - closest_door.coord[0]) + abs(pygame.mouse.get_pos()[1] - self.camera_offset[1] - closest_door.coord[1])
+                for adoor in self.doors:
+                    if smaller_distance == 0 or abs(pygame.mouse.get_pos()[0] - self.camera_offset[0] - adoor.coord[0]) + abs(pygame.mouse.get_pos()[1] - self.camera_offset[1] - adoor.coord[1]) < smaller_distance:
+                        smaller_distance = abs(pygame.mouse.get_pos()[0] - self.camera_offset[0] - adoor.coord[0]) + abs(pygame.mouse.get_pos()[1] - self.camera_offset[1] - adoor.coord[1])
+                        closest_door = adoor
+                closest_door.trigger(self.collision_mask)
 
             if event.type == pygame.KEYDOWN:
                 ### Center to party
