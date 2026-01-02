@@ -1,58 +1,55 @@
-import pygame
-import json
-# testing
-import random
-random.seed(210943)
+import pygame, json
+from . import pawn
 
+### REDO REDO REDO
 with open("config/default.json", "r") as file:
     room_settings = json.load(file)
-
 saved_img = pygame.image.load(f"saves/save_{room_settings['save_number']}.png")
-
-light_mask = pygame.mask.Mask(size=(15000, 15000), fill=False)
 screen_mask = pygame.mask.from_threshold(saved_img, (50, 50, 50), (1, 1, 1, 1))
-light_texture_surface = pygame.Surface((15000, 15000), pygame.SRCALPHA)
-light_texture_surface.blit(screen_mask.to_surface(unsetcolor=(0, 0, 0, 150), setcolor=(0, 0, 0)), (0, 0))
 
-def get_shadow(screen, room, room_dest, light_text_dest, light_radius, pawn):
-    # screen_mask = pygame.mask.from_surface(screen)
-    light_mask.draw(pygame.mask.from_threshold(screen, (255, 0, 0), (35, 35, 35, 0)), (0,0))
-    screen_mask.erase(light_mask, (0,0))
-    unsetsurface = room.copy()
-    pygame.draw.circle(light_texture_surface, (0, 0, 0, 150), light_text_dest, radius=light_radius+10)
-    # pygame.draw.circle(light_texture_surface, (0, 0, 0, 150), light_text_dest, radius=light_radius*.9)
-    pygame.draw.polygon(light_texture_surface, (0, 0, 0, 100), pawn.endpoints)
-    unsetsurface.blit(light_texture_surface, (0,0))
-    screen_mask.to_surface(surface=screen, setcolor=(0, 0, 0), unsetsurface=unsetsurface, dest=room_dest)
-    # screen_mask.to_surface(surface=screen, setsurface=room, unsetsurface=room, dest=room_dest)
+class Masks:
+    def __init__(self) -> None:
+        pass
+        
+    @staticmethod
+    def get_collision_mask(dungeon:pygame.Surface, thresholds:pygame.Color) -> pygame.Mask:
+        collision_mask = pygame.mask.Mask(size=dungeon.get_size(), fill=False)
+        pxarray = pygame.PixelArray(dungeon)
 
-def reset_shadow(light_text_dest, light_radius):
-    pygame.draw.circle(light_texture_surface, (0, 0, 0, 150), light_text_dest, radius=light_radius+10)
+        for x in range(dungeon.get_width()):
+            for y in range(dungeon.get_height()):
+                if (dungeon.unmap_rgb(pxarray[x][y])[1] >= dungeon.unmap_rgb(pxarray[x][y])[2] + thresholds.b and # type: ignore
+                    dungeon.unmap_rgb(pxarray[x][y])[1] >= dungeon.unmap_rgb(pxarray[x][y])[0] + thresholds.r     # type: ignore
+                    ):
+                    collision_mask.set_at((x, y), 1)
 
-def get_collision_mask(room, thresholds):
-    collision_mask = pygame.mask.Mask(room.get_size(), False)
-    pxarray = pygame.PixelArray(room)
+        return collision_mask
+    
+    @staticmethod
+    def update_light(light_mask:pygame.Mask, pawn:pawn.Pawn) -> None:
+        buffer = pygame.surface.Surface(light_mask.get_size(), flags=pygame.SRCALPHA)
+        buffer.fill((0, 0, 0, 0))
+        pygame.draw.polygon(buffer, (0, 0, 0, 255), pawn.endpoints)
+        light_mask.draw(pygame.mask.from_surface(buffer), (0, 0))
 
-    for x in range(room.get_width()):
-        for y in range(room.get_height()):
-            if (room.unmap_rgb(pxarray[x][y])[1] >= room.unmap_rgb(pxarray[x][y])[2] + thresholds["b"] and # type: ignore
-                room.unmap_rgb(pxarray[x][y])[1] >= room.unmap_rgb(pxarray[x][y])[0] + thresholds["r"]     # type: ignore
-                ):
-                collision_mask.set_at((x, y), 1)
+    @staticmethod
+    def draw_light(buffer:pygame.surface.Surface, light_mask:pygame.Mask, pawn:pawn.Pawn) -> None:
+        shadow_overlay = pygame.surface.Surface(buffer.get_size(), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_overlay, (0, 0, 0, 100), (0, 0, shadow_overlay.get_width(), shadow_overlay.get_height()))
+        pygame.draw.polygon(shadow_overlay, (255, 255, 255, 0), pawn.endpoints)
+        buffer.blit(source=light_mask.to_surface(surface=shadow_overlay, setsurface=shadow_overlay, unsetcolor=(0, 0, 0)), dest=(0, 0))
 
-    return collision_mask
-
-def get_save_surface(room):
+def get_save_surface(room): ### REDO REDO REDO
     save_mask = pygame.mask.Mask(size=(15000, 15000), fill=True)
     save_mask.erase(screen_mask, (0,0))
     return save_mask.to_surface(unsetcolor=(50,50,50), setsurface=room, dest=(0,0))
 
-def get_door_mask(door_surf):
+def get_door_mask(door_surf): ### REDO
     door_mask = pygame.mask.Mask(size=(15000, 15000), fill=False)
     door_mask.draw(pygame.mask.from_threshold(door_surf, (0, 0, 255), (1, 1, 1, 1)), (0, 0))
     return door_mask
 
-def get_doors(door_surf, door_mask):
+def get_doors(door_surf, door_mask): ### REDO
     doors = {}
     max_door_size = (200, 200)
     disposable_mask = pygame.mask.Mask(size=(20, 20), fill=True)
@@ -87,13 +84,7 @@ def get_doors(door_surf, door_mask):
             door_groups_list_copy.remove(x)
     door_groups_list = door_groups_list_copy
 
-    # testing
-    # for x in door_groups_list:
-    #     door_test_surf.blit(x[0].to_surface(unsetcolor=None, setcolor=(random.randint(1, 255),random.randint(1, 255),random.randint(1, 255))), x[1])
-    #     pygame.draw.circle(door_test_surf, 'red', x[1], 2)
-    # print(door_groups_list)
-
     return doors
 
-def check_door_click(door_mask, pos):
+def check_door_click(door_mask, pos): ### REDO
     return door_mask.get_at(pos) and not screen_mask.get_at(pos)

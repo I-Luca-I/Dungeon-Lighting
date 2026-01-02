@@ -1,7 +1,7 @@
 import pygame, math
 
 class Pawn:
-    def __init__(self, position:list[int], radius:float, img:pygame.Surface, size:float):
+    def __init__(self, position:pygame.Vector2, radius:float, img:pygame.Surface, size:float) -> None:
         self.position = position
         self.radius = radius
         self.endpoints = []
@@ -28,10 +28,10 @@ class Pawn:
         self.moving = False
         self.mouse_offset = [0, 0]      
 
-    def update(self, collision_mask:pygame.Mask):
+    def update(self, collision_mask:pygame.Mask) -> None:
         self.update_endpoints(collision_mask)
 
-    def update_endpoints(self, collision_mask:pygame.Mask):
+    def update_endpoints(self, collision_mask:pygame.Mask) -> None:
         endpoints = []
         i = 0
         while i < self.max_rays:
@@ -79,7 +79,10 @@ class Pawn:
 
         self.endpoints = [(endpoints[_][1], endpoints[_][2]) for _ in range(len(endpoints))]
     
-    def move(self, event:pygame.event.Event, mouse_coords:list[int], collision_mask:pygame.Mask):
+    def handle_events(self, event:pygame.event.Event, mouse_coords:pygame.Vector2, collision_mask:pygame.Mask) -> None:
+        self.move(event, mouse_coords, collision_mask)
+
+    def move(self, event:pygame.event.Event, mouse_coords:pygame.Vector2, collision_mask:pygame.Mask) -> None:
         x = (mouse_coords[0] - self.position[0] + self.texture.get_width()//2)
         y = (mouse_coords[1] - self.position[1] + self.texture.get_height()//2)
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 0 <= x < self.hitbox.get_size()[0] and  0 <= y < self.hitbox.get_size()[1] and self.hitbox.get_at((x, y))):
@@ -90,9 +93,9 @@ class Pawn:
             self.moving = False
 
         if (self.moving and collision_mask.overlap_area(self.hitbox, (mouse_coords[0] - self.texture.get_width()//2, mouse_coords[1] - self.texture.get_height()//2)) < 50):             
-            self.position = [mouse_coords[0] + self.mouse_offset[0], mouse_coords[1] + self.mouse_offset[1]]
+            self.position = pygame.Vector2(mouse_coords[0] + self.mouse_offset[0], mouse_coords[1] + self.mouse_offset[1])
 
-    def draw(self, buffer:pygame.Surface, debug_mode:bool):
+    def draw(self, buffer:pygame.Surface, debug_mode:bool) -> None:
         if (debug_mode):
             ### Rays
             for i in range(len(self.endpoints)):

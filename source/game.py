@@ -2,8 +2,8 @@ import pygame, json
 from . import pawn, mask
 
 class Game:
-    def __init__(self):
-        ### Load data
+    def __init__(self) -> None:
+        ### Load data (REDO)
         with open("config/default.json", "r") as file:
             settings = json.load(file)
         cursor_normal_img = pygame.image.load("assets/cursor_normal.png")
@@ -20,9 +20,6 @@ class Game:
         self.debug_mode = True
 
         ### Game setup
-        self.zoom_exponent = settings["zoom_exponent"]
-        self.zoom_factor = 1.1 ** self.zoom_exponent
-
         cursor_normal_img = pygame.transform.rotozoom(cursor_normal_img, 315, 100/cursor_normal_img.get_width())
         cursor_interact_img = pygame.transform.rotozoom(cursor_interact_img, 315, 100/cursor_interact_img.get_width())
         self.cursors = {
@@ -38,34 +35,35 @@ class Game:
             size=float(settings["token_relative_size"]),
         )
 
-        self.scrolling = False
-        self.camera_offset = [0, 0]
-        self.save_num = settings["save_number"]
+        self.save_num = settings["save_number"] # REDO
 
-        ### Surfaces (REDO)
-        self.temp_surf = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))  # serve usare una superfice ulteriore per salvare la shadow al posto dello screen, per permettere il movimento della visuale senza rompere tutto
-        self.temp_surf.fill((255, 255, 255, 0))
-        self.temp_surf = pygame.transform.rotozoom(self.temp_surf, 0, self.zoom_factor)
+        ### Camera
+        self.zoom_exponent = int(settings["zoom_exponent"])
+        self.zoom_factor = 1.1 ** self.zoom_exponent
+        self.scrolling = False
+        self.camera_offset = pygame.Vector2(0, 0)
+
+        ### Surfaces
         self.dungeon = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))
         self.dungeon.blit(dungeon_img, (0, 0))
-        # self.dungeon = pygame.transform.rotozoom(surface=self.dungeon, angle=0, scale=self.zoom_factor)
-        self.doors = pygame.transform.rotozoom(surface=doors_img, angle=0, scale=self.zoom_factor)
+        self.doors = pygame.transform.rotozoom(surface=doors_img, angle=0, scale=self.zoom_factor) # REDO
 
-        ### Masks (REDO)
-        self.collision_mask = mask.get_collision_mask(self.dungeon, {"b":35, "r":0})
-        door_mask = mask.get_door_mask(self.doors)
-        self.doors = mask.get_doors(self.doors, door_mask)
+        ### Masks
+        self.collision_mask = mask.Masks.get_collision_mask(self.dungeon, pygame.Color(0, 0, 35))
+        self.light_mask = pygame.mask.Mask(size=self.dungeon.get_size(), fill=False)
+        door_mask = mask.get_door_mask(self.doors) ### REDO
+        self.doors = mask.get_doors(self.doors, door_mask) ### REDO
     
-    def run(self):
+    def run(self) -> None:
         while self.running:
-            self.mouse_coords = [(pygame.mouse.get_pos()[0] - self.camera_offset[0])//self.zoom_factor, (pygame.mouse.get_pos()[1] - self.camera_offset[1])//self.zoom_factor]
+            self.mouse_coords = (pygame.Vector2(pygame.mouse.get_pos()) - self.camera_offset) // self.zoom_factor
 
             self.event_loop()
             self.clock.tick(60)
             
             self.zoom_factor = 1.1 ** self.zoom_exponent
 
-            buffer = pygame.surface.Surface(size=(self.dungeon.get_width(), self.dungeon.get_height()))
+            buffer = pygame.surface.Surface(size=(self.dungeon.get_width(), self.dungeon.get_height()), flags=pygame.SRCALPHA)
             buffer.blit(source=self.dungeon, dest=(0, 0))
 
             if (self.debug_mode):
@@ -75,31 +73,29 @@ class Game:
                 print(f"Camera offset: {self.camera_offset}")
                 print("\033[4A", end="")
 
-                buffer.blit(source=self.collision_mask.to_surface(), dest=(0, 0))
+                buffer.blit(source=self.collision_mask.to_surface(setcolor=(0, 255, 0), unsetcolor=(255, 255, 255)), dest=(0, 0))
 
-            ### REDO REDO REDO
-            self.party.update(self.collision_mask)    
-            # mask.get_shadow(self.temp_surf, self.dungeon, self.camera_offset, (self.party.position[0] - self.camera_offset[0], self.party.position[1] - self.camera_offset[1]), self.party.radius, self.party)
-            # screen.blit(self.temp_surf, (0, 0))
+            self.party.update(self.collision_mask)
+            mask.Masks.update_light(self.light_mask, self.party)
+            mask.Masks.draw_light(buffer, self.light_mask, self.party)
             self.party.draw(buffer, self.debug_mode)
-            # mask.reset_shadow((self.party.position[0] - self.camera_offset[0], self.party.position[1] - self.camera_offset[1]), self.party.radius)
-            
+
             if (self.debug_mode):
                 pygame.draw.circle(buffer, (0,255,0), self.mouse_coords, 1, 1)
 
+            ### Print buffer on screen
             screen = pygame.display.get_surface()
             screen.blit(
                 source=pygame.transform.rotozoom(surface=buffer, angle=0, scale=self.zoom_factor),
                 dest=self.camera_offset
             )
-
             pygame.display.flip()
 
         self.quit()
 
-    def event_loop(self):
+    def event_loop(self) -> None:
         for event in pygame.event.get():
-            self.party.move(event, self.mouse_coords, self.collision_mask)
+            self.party.handle_events(event, self.mouse_coords, self.collision_mask)
 
             ### Quit
             if event.type == pygame.QUIT:
@@ -118,7 +114,7 @@ class Game:
                     self.start_mouse_pos = pygame.mouse.get_pos()
                     self.start_camera_offset = self.camera_offset
                 else:
-                    self.camera_offset = [self.start_camera_offset[0] + pygame.mouse.get_pos()[0] - self.start_mouse_pos[0], self.start_camera_offset[1] + pygame.mouse.get_pos()[1] - self.start_mouse_pos[1]]
+                    self.camera_offset = self.start_camera_offset + pygame.mouse.get_pos() - self.start_mouse_pos
             else:
                 self.scrolling = False
 
@@ -136,14 +132,14 @@ class Game:
                 if event.key == pygame.K_F4:
                     self.debug_mode = not self.debug_mode
 
-            ### Zoom
+            ### Zoom (REDO)
             if event.type == pygame.MOUSEWHEEL:
                 if (event.y > 0):
                     self.zoom_exponent += 1
                 else:
                     self.zoom_exponent -= 1
 
-    def move_camera(self, coords:list[int]):
+    def move_camera(self, coords:pygame.Vector2) -> None:
         self.camera_offset[0] = pygame.display.get_surface().get_width()//2 - coords[0]*self.zoom_factor
         self.camera_offset[1] = pygame.display.get_surface().get_height()//2 - coords[1]*self.zoom_factor
 
@@ -165,6 +161,9 @@ class Game:
         save_surf = mask.get_save_surface(self.dungeon.convert_alpha())
         pygame.image.save(save_surf, f"saves/save_{self.save_num}.png")
 
-    def quit(self):
+    def load(self): ### REDO
+        pass
+
+    def quit(self) -> None:
         self.save()
         pygame.quit()
