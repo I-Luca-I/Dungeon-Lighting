@@ -22,11 +22,11 @@ screen = pygame.transform.rotozoom(screen, 0, zoom_factor)
 
 # Cursore fighissimo pazzo
 cursore_0_img = pygame.image.load("backgrounds/cursor0.png")
-cursore_0_img = pygame.transform.rotozoom(cursore_0_img, 315, (100/cursore_0_img.get_width())*zoom_factor)
-cursore0 = pygame.cursors.Cursor((10, 40), cursore_0_img)
+cursore_0_img = pygame.transform.rotozoom(cursore_0_img, 315, (70/cursore_0_img.get_width())*zoom_factor)
+cursore0 = pygame.cursors.Cursor((7, 28), cursore_0_img)
 cursore_1_img = pygame.image.load("backgrounds/cursor1.png")
-cursore_1_img = pygame.transform.rotozoom(cursore_1_img, 315, (100/cursore_1_img.get_width())*zoom_factor)
-cursore1 = pygame.cursors.Cursor((10, 40), cursore_1_img)
+cursore_1_img = pygame.transform.rotozoom(cursore_1_img, 315, (70/cursore_1_img.get_width())*zoom_factor)
+cursore1 = pygame.cursors.Cursor((7, 28), cursore_1_img)
 cursori = [cursore0, cursore1]
 pygame.mouse.set_cursor(cursori[0])
 
@@ -35,12 +35,8 @@ collision_mask = mask.get_collision_mask(room, {"b":35, "r":0})
 door_surf = pygame.image.load(f"backgrounds/{bg_name}_doors.png")
 door_surf = pygame.transform.rotozoom(door_surf, 0, zoom_factor)
 door_mask = mask.get_door_mask(door_surf)
-
 door_test_surf = door_mask.to_surface(unsetcolor=None)
 doors = mask.get_doors(door_surf, door_mask, door_test_surf)
-print(doors)
-#for key in doors:
-#    door_test_surf.blit(doors[key].to_surface(unsetcolor=None, setcolor=(0,0,255)), key)
 
 
 clock = pygame.time.Clock()
@@ -56,7 +52,7 @@ party = pawn.Pawn(
 
 scrolling = False
 camera_offset = [0, 0]
-# party.center_to_camera(camera, camera_offset)
+party.center_to_camera(camera, camera_offset)
 
 save_num = room_settings["save_number"]
 
@@ -115,9 +111,12 @@ while running:
             pygame.mouse.set_cursor(cursori[1])
 
         if pygame.mouse.get_pressed()[0] and mask.check_door_click(door_mask, (pygame.mouse.get_pos()[0] - camera_offset[0], pygame.mouse.get_pos()[1] - camera_offset[1])):
-            print("!")
-
-
+            smaller_distance = 0
+            for coord in doors:
+                if smaller_distance == 0 or abs(pygame.mouse.get_pos()[0] - camera_offset[0] - coord[0]) + abs(pygame.mouse.get_pos()[1] - camera_offset[1] - coord[1]) < smaller_distance:
+                    smaller_distance = abs(pygame.mouse.get_pos()[0] - camera_offset[0] - coord[0]) + abs(pygame.mouse.get_pos()[1] - camera_offset[1] - coord[1])
+                    door = [doors[coord], coord]
+            collision_mask.erase(door[0], door[1])
 
         if event.type == pygame.KEYDOWN:
             # Center to party
@@ -132,7 +131,7 @@ while running:
     camera.blit(screen, (0, 0))
     party.draw(camera, camera_offset)
     mask.reset_shadow((party.position[0] - camera_offset[0], party.position[1] - camera_offset[1]), party.radius)
-    camera.blit(door_test_surf, camera_offset)
+    # camera.blit(door_test_surf, camera_offset)
 
     pygame.display.flip()
     clock.tick(60)
