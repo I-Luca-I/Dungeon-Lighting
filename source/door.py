@@ -69,4 +69,6 @@ class Door:
 
     @staticmethod
     def check_door_click(door_mask, light_mask, pos):
+        pos[0] = max(0, min(pos[0], light_mask.get_size()[0]-1))
+        pos[1] = max(0, min(pos[1], light_mask.get_size()[1]-1))
         return door_mask.get_at(pos) and light_mask.get_at(pos)

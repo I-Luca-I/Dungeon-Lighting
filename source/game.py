@@ -6,27 +6,35 @@ class Game:
         self.id = id
 
         ### Load local data
-        settings = self.load_config(self.id)
         dungeon_img = pygame.image.load(f"assets/local/dungeon_{id}.png")
         doors_img = pygame.image.load(f"assets/local/doors_{id}.png")
         
-        try:
-            os.mkdir(f"saves")
-        except FileExistsError:
-            pass
-        finally:
-            try:
-                os.mkdir(f"saves/dungeon_{id}")
-            except FileExistsError:
-                pass
-            finally:
-                saves = os.listdir(f"saves/dungeon_{id}")
+        os.makedirs(f"saves/dungeon_{id}", exist_ok=True)
+        saves = os.listdir(f"saves/dungeon_{id}")
+
+        saves_img = []
+        saves_json = []
         
-        saves.sort(reverse=True)
-        if (len(saves) > 0):
-            print(f"Loading save: {saves[0]}...")
-            light_mask_img = pygame.image.load(f"saves/dungeon_{id}/{saves[0]}")
-            
+        for s in saves:
+            if s.endswith(".png"):
+                saves_img.append(s)
+            elif s.endswith(".json"):
+                saves_json.append(s)
+
+        saves_img.sort(reverse=True)
+        saves_json.sort(reverse=True)
+        
+        if (len(saves_img) > 0):
+            print(f"Loading save: {saves_img[0]}...")
+            light_mask_img = pygame.image.load(f"saves/dungeon_{id}/{saves_img[0]}")
+        
+        if (len(saves_json) > 0):
+            with open(f"saves/dungeon_{id}/{saves_json[0]}", "r") as file:
+                self.settings = json.load(file)
+        else:
+           with open("config/default.json", "r") as file:
+                self.settings = json.load(file)
+         
         ### Load absolute data
         cursor_normal_img = pygame.image.load("assets/cursor_normal.png")
         cursor_interact_img = pygame.image.load("assets/cursor_interact.png")
@@ -37,7 +45,7 @@ class Game:
         )
         self.clock = pygame.time.Clock()
         self.running = True
-        self.debug_mode = bool(settings["debug_mode"])
+        self.debug_mode = bool(self.settings["debug_mode"])
 
         ### Game setup
         cursor_normal_img = pygame.transform.rotozoom(cursor_normal_img, 315, 100/cursor_normal_img.get_width())
@@ -49,17 +57,17 @@ class Game:
         pygame.mouse.set_cursor(self.cursors["normal"])
 
         self.party = pawn.Pawn(
-            position=settings["party_position"],
-            radius=settings["party_radius"],
+            position=self.settings["party_position"],
+            radius=self.settings["party_radius"],
             img=pygame.image.load("assets/token.png"),
-            size=float(settings["party_size"]),
+            size=float(self.settings["party_size"]),
         )
 
         ### Camera
-        self.zoom_exponent = int(settings["zoom_exponent"])
+        self.zoom_exponent = int(self.settings["zoom_exponent"])
         self.zoom_factor = 1.1 ** self.zoom_exponent
         self.scrolling = False
-        self.camera_offset = pygame.Vector2(settings["camera_offset"])
+        self.camera_offset = pygame.Vector2(self.settings["camera_offset"])
 
         ### Surfaces
         self.dungeon = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))
@@ -182,35 +190,23 @@ class Game:
         self.camera_offset[1] = pygame.display.get_surface().get_height()//2 - coords[1]*self.zoom_factor
 
     def save(self, id:int) -> None:
-        settings = self.load_config(id)
-
         settings = {
             "zoom_exponent": self.zoom_exponent,
-            "party_size": settings["party_size"],
+            "party_size": self.settings["party_size"],
             "party_position": [self.party.position[0], self.party.position[1]],
             "party_radius": self.party.radius,
             "camera_offset": [self.camera_offset[0], self.camera_offset[1]],
             "debug_mode": self.debug_mode
         }
 
-        with open(f"config/local_{id}.json", "w") as file:
+        os.makedirs(f"saves/dungeon_{id}", exist_ok=True)
+        date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+        
+        with open(f"saves/dungeon_{id}/{date}_config.json", "w") as file:
             json.dump(settings, file)
 
-        try:
-            os.mkdir(f"saves/dungeon_{id}")
-        finally:
-            save_surface = self.light_mask.to_surface()
-            pygame.image.save(save_surface, f"saves/dungeon_{id}/{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')}_light_mask.png")
-
-    def load_config(self, id:int) -> dict:
-        try:
-            with open(f"config/local_{id}.json", "r") as file:
-                settings = json.load(file)
-        except FileNotFoundError:
-            with open("config/default.json", "r") as file:
-                settings = json.load(file)
-        finally:
-            return settings
+        save_surface = self.light_mask.to_surface()
+        pygame.image.save(save_surface, f"saves/dungeon_{id}/{date}_light_mask.png")
 
     def quit(self) -> None:
         self.save(self.id)
