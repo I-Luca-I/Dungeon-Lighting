@@ -10,9 +10,9 @@ class Door:
     def trigger(self, collision_mask:pygame.Mask) -> None:
         if self.state == "closed":
             self.state = "open"
+            self.closed_hitbox_mask = pygame.mask.Mask(size=self.mask.get_size(), fill=False)
             self.closed_hitbox_mask.draw(collision_mask, (-self.coord[0], -self.coord[1]))
             collision_mask.erase(self.mask, self.coord)
-            self.closed_hitbox_mask = pygame.mask.Mask(size=self.mask.get_size(), fill=False)
         else:
             self.state = "closed"
             collision_mask.draw(self.closed_hitbox_mask, self.coord)
