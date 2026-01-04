@@ -87,12 +87,11 @@ class Game:
     
     def run(self) -> None:
         while self.running:
-            self.mouse_coords = (pygame.Vector2(pygame.mouse.get_pos()) - self.camera_offset) // self.zoom_factor
+            self.mouse_coords = (pygame.mouse.get_pos() - self.camera_offset) // self.zoom_factor
 
             self.event_loop()
             self.clock.tick(60)
             
-            self.zoom_factor = 1.1 ** self.zoom_exponent
             if (pygame.display.get_surface().get_width() > self.dungeon.get_width()*self.zoom_factor or pygame.display.get_surface().get_height() > self.dungeon.get_height()*self.zoom_factor):
                 self.zoom_exponent += 1
                 self.zoom_factor = 1.1 ** self.zoom_exponent
@@ -117,7 +116,8 @@ class Game:
             self.party.draw(buffer, self.debug_mode)
 
             if (self.debug_mode):
-                pygame.draw.circle(buffer, (0,255,0), self.mouse_coords, 1, 1)
+                pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
+                pygame.draw.circle(buffer, (0, 255, 0), self.mouse_coords, 1, 1)
 
             ### Print buffer on screen
             screen = pygame.display.get_surface()
@@ -182,8 +182,13 @@ class Game:
             if event.type == pygame.MOUSEWHEEL:
                 if (event.y > 0):
                     self.zoom_exponent += 1
+
                 else:
                     self.zoom_exponent -= 1
+                self.zoom_factor = 1.1 ** self.zoom_exponent
+                self.move_camera(self.party.position)
+                self.party.moving = False
+                
                 
     def move_camera(self, coords:pygame.Vector2) -> None:
         self.camera_offset[0] = pygame.display.get_surface().get_width()//2 - coords[0]*self.zoom_factor

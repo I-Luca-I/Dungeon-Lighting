@@ -1,7 +1,13 @@
 import pygame, math
 
+sin_cache = []
+cos_cache = []
+
+
 class Pawn:
     def __init__(self, position:pygame.Vector2, radius:float, img:pygame.Surface, size:float) -> None:
+        global sin_cache
+        global cos_cache
         self.position = position
         self.radius = radius
         self.endpoints = []
@@ -17,7 +23,7 @@ class Pawn:
             surface=hitbox_surface,
             color=(255, 255, 255, 255),
             center=(self.texture.get_width()//2, self.texture.get_height()//2),
-            radius=self.texture.get_width()//2
+            radius=self.texture.get_width()//4
         )
         self.hitbox = pygame.mask.from_threshold(surface=hitbox_surface, color=(255, 255, 255), threshold=(1, 1, 1))
 
@@ -26,7 +32,11 @@ class Pawn:
         self.penetration = 3 # How much will it travel through walls
 
         self.moving = False
-        self.mouse_offset = [0, 0]      
+        self.mouse_offset = [0, 0]
+
+        for i in range(self.max_rays):
+            sin_cache.append(math.sin(i * (2 * math.pi) / self.max_rays))
+            cos_cache.append(math.cos(i * (2 * math.pi) / self.max_rays))
 
     def update(self, collision_mask:pygame.Mask) -> None:
         self.position[0] = max(0, min(self.position[0], collision_mask.get_size()[0]-1))
@@ -37,11 +47,10 @@ class Pawn:
         endpoints = []
         i = 0
         while i < self.max_rays:
-            degrees = i * (2 * math.pi) / self.max_rays
             start = self.position
             end = (
-                max(0, min(int(start[0] + (self.radius * math.cos(degrees))), collision_mask.get_size()[0] - 1)),
-                max(0, min(int(start[1] + (self.radius * math.sin(degrees))), collision_mask.get_size()[1] - 1))
+                max(0, min(int(start[0] + (self.radius * cos_cache[i])), collision_mask.get_size()[0] - 1)),
+                max(0, min(int(start[1] + (self.radius * sin_cache[i])), collision_mask.get_size()[1] - 1))
             )
 
             m = float(start[1]-end[1])/float(start[0]-end[0]) if (start[0] != end[0]) else collision_mask.get_size()[1]
@@ -70,14 +79,13 @@ class Pawn:
             i += 1 if interrupt else self.smoothness
         
         endpoints.sort()
-        for i in range(len(endpoints)):
-            endpoints[i][1] = (endpoints[i-1][1] + endpoints[i][1] + endpoints[(i+1) % len(endpoints)][1]) / 3
-            endpoints[i][2] = (endpoints[i-1][2] + endpoints[i][2] + endpoints[(i+1) % len(endpoints)][2]) / 3
+        # for i in range(len(endpoints)):
+        #     endpoints[i][1] = (endpoints[i-1][1] + endpoints[i][1] + endpoints[(i+1) % len(endpoints)][1]) / 3
+        #     endpoints[i][2] = (endpoints[i-1][2] + endpoints[i][2] + endpoints[(i+1) % len(endpoints)][2]) / 3
 
         for i in range(len(endpoints)):
-            degrees = endpoints[i][0] * (2 * math.pi) / self.max_rays
-            endpoints[i][1] += self.penetration * math.cos(degrees)
-            endpoints[i][2] += self.penetration * math.sin(degrees)
+            endpoints[i][1] += self.penetration * cos_cache[i]
+            endpoints[i][2] += self.penetration * sin_cache[i]
 
         self.endpoints = [(endpoints[_][1], endpoints[_][2]) for _ in range(len(endpoints))]
     
@@ -89,13 +97,27 @@ class Pawn:
         y = (mouse_coords[1] - self.position[1] + self.texture.get_height()//2)
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 0 <= x < self.hitbox.get_size()[0] and  0 <= y < self.hitbox.get_size()[1] and self.hitbox.get_at((x, y))):
             self.moving = True
-            self.mouse_offset = [self.position[0] - mouse_coords[0], self.position[1] - mouse_coords[1]]
-        
+            self.mouse_offset = self.position - mouse_coords
         elif (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
             self.moving = False
 
-        if (self.moving and collision_mask.overlap_area(self.hitbox, (mouse_coords[0] - self.texture.get_width()//2, mouse_coords[1] - self.texture.get_height()//2)) < 50):             
+        line_of_sight = pygame.surface.Surface(size=collision_mask.get_size(), flags=pygame.SRCALPHA)
+        pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position, mouse_coords)
+
+        if (
+            self.moving and 
+            collision_mask.overlap_area(self.hitbox, mouse_coords + self.mouse_offset - (self.texture.get_width()//2, self.texture.get_height()//2)) < 50 and
+            collision_mask.overlap_area(pygame.mask.from_surface(line_of_sight), (0, 0)) == 0
+        ):
             self.position = pygame.Vector2(mouse_coords[0] + self.mouse_offset[0], mouse_coords[1] + self.mouse_offset[1])
+
+        # self.polygon_surface = pygame.surface.Surface(size=collision_mask.get_size())
+        # if len(self.endpoints) > 2:
+        #     pygame.draw.polygon(self.polygon_surface, (255,0,0,255), self.endpoints)
+        
+        # if (self.moving and collision_mask.overlap_area(self.hitbox, mouse_coords + self.mouse_offset - (self.texture.get_width()//2, self.texture.get_height()//2)) < 50 and self.polygon_surface.get_at((int(mouse_coords[0] + self.mouse_offset[0]), int(mouse_coords[1] + self.mouse_offset[1])))) == (255, 0, 0, 255):
+        #     self.position = pygame.Vector2(mouse_coords[0] + self.mouse_offset[0], mouse_coords[1] + self.mouse_offset[1])
+        # self.polygon_surface.fill((0, 0, 0, 255))
 
     def draw(self, buffer:pygame.Surface, debug_mode:bool) -> None:
         if (debug_mode):
@@ -121,6 +143,6 @@ class Pawn:
                 surface=buffer,
                 color=(0, 0, 255),
                 center=self.position,
-                radius=self.texture.get_width()//2,
+                radius=self.texture.get_width()//4,
                 width=1
             )
