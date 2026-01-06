@@ -38,10 +38,12 @@ class Game:
         ### Load absolute data
         cursor_normal_img = pygame.image.load("assets/cursor_normal.png")
         cursor_interact_img = pygame.image.load("assets/cursor_interact.png")
+        cursor_door_open_img = pygame.image.load("assets/cursor_door_closed.png")
+        cursor_door_close_img = pygame.image.load("assets/cursor_door_open.png")
         
         ### Pygame setup
         pygame.display.set_mode(
-            size=(500, 500)
+            size=(900, 900)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -52,7 +54,9 @@ class Game:
         cursor_interact_img = pygame.transform.rotozoom(cursor_interact_img, 315, 100/cursor_interact_img.get_width())
         self.cursors = {
             "normal": pygame.cursors.Cursor((7, 28), cursor_normal_img),
-            "interact": pygame.cursors.Cursor((7, 28), cursor_interact_img)
+            "interact": pygame.cursors.Cursor((7, 28), cursor_interact_img),
+            "open_door": pygame.cursors.Cursor((0, 0), cursor_door_open_img),
+            "close_door": pygame.cursors.Cursor((0, 0), cursor_door_close_img)
         }
         pygame.mouse.set_cursor(self.cursors["normal"])
 
@@ -155,14 +159,20 @@ class Game:
                 self.scrolling = False
 
             ### Door interaction
-            if pygame.mouse.get_pressed()[0] and door.Door.check_door_click(self.door_mask, self.light_mask, self.mouse_coords) and not self.party.moving:
+            if door.Door.check_door_click(self.door_mask, self.light_mask, self.mouse_coords) and not self.party.moving:
+                ### finding closest door
                 closest_door = self.doors[0]
                 smaller_distance = abs(self.mouse_coords[0] - closest_door.coord[0]) + abs(self.mouse_coords[1] - closest_door.coord[1])
                 for adoor in self.doors:
                     if smaller_distance == 0 or abs(self.mouse_coords[0] - adoor.coord[0]) + abs(self.mouse_coords[1] - adoor.coord[1]) < smaller_distance:
                         smaller_distance = abs(self.mouse_coords[0] - adoor.coord[0]) + abs(self.mouse_coords[1] - adoor.coord[1])
                         closest_door = adoor
-                closest_door.trigger(self.collision_mask)
+                ### door cursor state
+                cursor = self.cursors["open_door"] if closest_door.state == "closed" else self.cursors["close_door"]
+                pygame.mouse.set_cursor(cursor)
+                ### door trigger
+                if pygame.mouse.get_pressed()[0]:
+                    closest_door.trigger(self.collision_mask)
 
             if event.type == pygame.KEYDOWN:
                 ### Center to party

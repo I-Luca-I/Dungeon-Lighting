@@ -1,7 +1,7 @@
 import pygame
 
 class Door:
-    def __init__(self, mask:pygame.Mask, coord:pygame.Vector2):
+    def __init__(self, mask:pygame.Mask, coord:pygame.Vector2) -> None:
         self.mask = mask
         self.coord = coord
         self.state = "closed"
@@ -68,7 +68,7 @@ class Door:
         return doors
 
     @staticmethod
-    def check_door_click(door_mask, light_mask, pos):
+    def check_door_click(door_mask:pygame.Mask, light_mask:pygame.Mask, pos:pygame.Vector2) -> bool:
         pos[0] = max(0, min(pos[0], light_mask.get_size()[0]-1))
         pos[1] = max(0, min(pos[1], light_mask.get_size()[1]-1))
         return door_mask.get_at(pos) and light_mask.get_at(pos)
