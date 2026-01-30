@@ -8,3 +8,4 @@ local*
 
 # Cache
 __pycache__/
+.vscode

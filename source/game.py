@@ -2,7 +2,7 @@ import pygame, json, os, datetime
 from . import pawn, mask, door
 
 class Game:
-    def __init__(self, id:int) -> None:
+    def __init__(self, id:str) -> None:
         self.id = id
 
         ### Load local data
@@ -204,7 +204,7 @@ class Game:
         self.camera_offset[0] = pygame.display.get_surface().get_width()//2 - coords[0]*self.zoom_factor
         self.camera_offset[1] = pygame.display.get_surface().get_height()//2 - coords[1]*self.zoom_factor
 
-    def save(self, id:int) -> None:
+    def save(self, id:str) -> None:
         settings = {
             "zoom_exponent": self.zoom_exponent,
             "party_size": self.settings["party_size"],
