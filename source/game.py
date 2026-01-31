@@ -2,38 +2,16 @@ import pygame, json, os, datetime
 from . import pawn, mask, door
 
 class Game:
-    def __init__(self, id:str) -> None:
+    def __init__(self, id:str, save:str) -> None:
         self.id = id
+        self.save = save
 
         ### Load local data
-        dungeon_img = pygame.image.load(f"assets/local/dungeon_{id}.png")
-        doors_img = pygame.image.load(f"assets/local/doors_{id}.png")
-        
-        os.makedirs(f"saves/dungeon_{id}", exist_ok=True)
-        saves = os.listdir(f"saves/dungeon_{id}")
-
-        saves_img = []
-        saves_json = []
-        
-        for s in saves:
-            if s.endswith(".png"):
-                saves_img.append(s)
-            elif s.endswith(".json"):
-                saves_json.append(s)
-
-        saves_img.sort(reverse=True)
-        saves_json.sort(reverse=True)
-        
-        if (len(saves_img) > 0):
-            print(f"Loading save: {saves_img[0]}...")
-            light_mask_img = pygame.image.load(f"saves/dungeon_{id}/{saves_img[0]}")
-        
-        if (len(saves_json) > 0):
-            with open(f"saves/dungeon_{id}/{saves_json[0]}", "r") as file:
-                self.settings = json.load(file)
-        else:
-           with open("config/default.json", "r") as file:
-                self.settings = json.load(file)
+        dungeon_img = pygame.image.load(f"assets/local/dungeon_{self.id}.png")
+        doors_img = pygame.image.load(f"assets/local/doors_{self.id}.png")
+        light_mask_img = pygame.image.load(f"saves/dungeon_{self.id}/{self.save}_light_mask.png")
+        with open(f"saves/dungeon_{self.id}/{self.save}_config.json", "r") as file:
+            self.settings = json.load(file)
          
         ### Load absolute data
         cursor_normal_img = pygame.image.load("assets/cursor_normal.png")
@@ -43,7 +21,7 @@ class Game:
         
         ### Pygame setup
         pygame.display.set_mode(
-            size=(900, 900)
+            size=(800, 800)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -76,11 +54,12 @@ class Game:
         ### Surfaces
         self.dungeon = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))
         self.dungeon.blit(dungeon_img, (0, 0))
-        self.door_surface = doors_img  # pygame.transform.rotozoom(surface=doors_img, angle=0, scale=self.zoom_factor)
+        self.door_surface = doors_img
+        self.frame = pygame.image.load("assets/frame.png")
 
         ### Masks
         self.collision_mask = mask.Masks.get_collision_mask(self.dungeon, pygame.Color(0, 0, 35))
-        if (len(saves) == 0):
+        if (self.save == "0000-00-00"):
             self.light_mask = pygame.mask.Mask(size=self.dungeon.get_size(), fill=False)
         else:
             light_surface = pygame.surface.Surface(size=self.dungeon.get_size())
@@ -129,6 +108,7 @@ class Game:
                 source=pygame.transform.rotozoom(surface=buffer, angle=0, scale=self.zoom_factor),
                 dest=self.camera_offset
             )
+            screen.blit(source=pygame.transform.rotozoom(surface=self.frame, angle=0, scale=800//1920), dest=(0, 0))
             pygame.display.flip()
 
         self.quit()
@@ -182,7 +162,7 @@ class Game:
                 
                 ### Manual save
                 if event.key == pygame.K_s:
-                    self.save(self.id)
+                    self.save_dungeon(self.id)
                 
                 ### Debug mode
                 if event.key == pygame.K_F4:
@@ -198,13 +178,12 @@ class Game:
                 self.zoom_factor = 1.1 ** self.zoom_exponent
                 self.move_camera(self.party.position)
                 self.party.moving = False
-                
-                
+                               
     def move_camera(self, coords:pygame.Vector2) -> None:
         self.camera_offset[0] = pygame.display.get_surface().get_width()//2 - coords[0]*self.zoom_factor
         self.camera_offset[1] = pygame.display.get_surface().get_height()//2 - coords[1]*self.zoom_factor
 
-    def save(self, id:str) -> None:
+    def save_dungeon(self, id:str) -> None:
         settings = {
             "zoom_exponent": self.zoom_exponent,
             "party_size": self.settings["party_size"],
@@ -224,5 +203,5 @@ class Game:
         pygame.image.save(save_surface, f"saves/dungeon_{id}/{date}_light_mask.png")
 
     def quit(self) -> None:
-        self.save(self.id)
+        self.save_dungeon(self.id)
         pygame.quit()
