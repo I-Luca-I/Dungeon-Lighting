@@ -18,10 +18,11 @@ class Game:
         cursor_interact_img = pygame.image.load("assets/cursor_interact.png")
         cursor_door_open_img = pygame.image.load("assets/cursor_door_closed.png")
         cursor_door_close_img = pygame.image.load("assets/cursor_door_open.png")
+        frame_img = pygame.image.load("assets/frame.png")
         
         ### Pygame setup
         pygame.display.set_mode(
-            size=(800, 800)
+            size=(1920, 1080)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -55,7 +56,9 @@ class Game:
         self.dungeon = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))
         self.dungeon.blit(dungeon_img, (0, 0))
         self.door_surface = doors_img
-        self.frame = pygame.image.load("assets/frame.png")
+        self.frame = pygame.surface.Surface(size=(frame_img.get_width(), frame_img.get_height()), flags=pygame.SRCALPHA)
+        # frame_img.convert_alpha()
+        self.frame.blit(frame_img, (0, 0))
 
         ### Masks
         self.collision_mask = mask.Masks.get_collision_mask(self.dungeon, pygame.Color(0, 0, 35))
@@ -108,7 +111,7 @@ class Game:
                 source=pygame.transform.rotozoom(surface=buffer, angle=0, scale=self.zoom_factor),
                 dest=self.camera_offset
             )
-            screen.blit(source=pygame.transform.rotozoom(surface=self.frame, angle=0, scale=800//1920), dest=(0, 0))
+            screen.blit(source=pygame.transform.rotozoom(surface=self.frame, angle=0, scale=1), dest=(0, 0))
             pygame.display.flip()
 
         self.quit()

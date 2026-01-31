@@ -1,7 +1,4 @@
-try:
-    import PySimpleGUI as sg # type: ignore
-except:
-    import FreeSimpleGUI as sg # type: ignore
+import FreeSimpleGUI as sg
 import os
 
 class Menu:
@@ -65,4 +62,3 @@ class Menu:
             "id": id,
             "save": save
         }
-    
