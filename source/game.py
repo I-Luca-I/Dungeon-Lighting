@@ -19,6 +19,7 @@ class Game:
         cursor_door_open_img = pygame.image.load("assets/cursor_door_closed.png")
         cursor_door_close_img = pygame.image.load("assets/cursor_door_open.png")
         frame_img = pygame.image.load("assets/frame.png")
+        icon = pygame.image.load("assets/icon.ico")
         
         ### Pygame setup
         pygame.display.set_mode(
@@ -27,6 +28,8 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.debug_mode = bool(self.settings["debug_mode"])
+        pygame.display.set_caption("Dungeon//Lighting")
+        pygame.display.set_icon(icon)
 
         ### Game setup
         cursor_normal_img = pygame.transform.rotozoom(cursor_normal_img, 315, 100/cursor_normal_img.get_width())
