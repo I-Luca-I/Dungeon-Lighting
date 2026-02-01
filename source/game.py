@@ -127,7 +127,7 @@ class Game:
                 source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor),
                 dest=self.camera_offset
             )
-            # screen.blit(source=self.frame, dest=(0, 0))
+            screen.blit(source=self.frame, dest=(0, 0))
             pygame.display.flip()
 
             timer.add_breakpoint("end_loop")

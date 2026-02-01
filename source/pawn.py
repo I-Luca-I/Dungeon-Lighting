@@ -28,7 +28,7 @@ class Pawn:
         self.hitbox = pygame.mask.from_threshold(surface=hitbox_surface, color=(255, 255, 255), threshold=(1, 1, 1))
 
         self.max_rays = 500 # The higher => the more detailed the shape will be
-        self.smoothness = 10 # The lower => the more detailed the shape will be
+        self.smoothness = 5 # The lower => the more detailed the shape will be (better to lower this than to raise max_rays performance-wise)
         self.penetration = 3 # How much will it travel through walls
 
         self.moving = False
