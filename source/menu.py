@@ -39,11 +39,12 @@ class Menu:
             event, values = self.window.read() # type: ignore
 
             if event == "-DUNGEON-":
-                self.saves = os.listdir(f"saves/dungeon_{values['-DUNGEON-']}")
-                for i in range(len(self.saves)):
-                    self.saves[i] = self.saves[i][:len("0000-00-00-00-00")]
-                self.saves = list(set(self.saves))
-                self.saves.sort()
+                files = os.listdir(f"saves/dungeon_{values['-DUNGEON-']}")
+                self.saves = []
+                for f in files:
+                    if f.endswith(".json"):
+                        self.saves.append(f[:len("0000-00-00-00-00")])
+                self.saves.sort(reverse=True)
                 self.window["-SAVE-"].update(values=self.saves, value="Scegli un save", size=(33, 100)) # type: ignore
 
             if event in (sg.WINDOW_CLOSED, "CHIUDI"):

@@ -4,19 +4,19 @@ class Door:
     def __init__(self, mask:pygame.Mask, coord:pygame.Vector2) -> None:
         self.mask = mask
         self.coord = coord
-        self.state = "closed"
+        self.is_open = False
         self.closed_hitbox_mask = pygame.Mask(size=(100,100))
 
     def trigger(self, collision_mask:pygame.Mask) -> None:
-        if self.state == "closed":
-            self.state = "open"
+        if not(self.is_open):
+            self.is_open = True
             self.closed_hitbox_mask = pygame.mask.Mask(size=self.mask.get_size(), fill=False)
             self.closed_hitbox_mask.draw(collision_mask, (-self.coord[0], -self.coord[1]))
             collision_mask.erase(self.mask, self.coord)
         else:
-            self.state = "closed"
+            self.is_open = False
             collision_mask.draw(self.closed_hitbox_mask, self.coord)
-        print(self.state)
+        print(self.is_open)
 
 
     @staticmethod
@@ -71,4 +71,4 @@ class Door:
     def check_door_click(door_mask:pygame.Mask, light_mask:pygame.Mask, pos:pygame.Vector2) -> bool:
         pos[0] = max(0, min(pos[0], light_mask.get_size()[0]-1))
         pos[1] = max(0, min(pos[1], light_mask.get_size()[1]-1))
-        return door_mask.get_at(pos) and light_mask.get_at(pos)
+        return door_mask.get_at(pos) and light_mask.get_at(pos) # type: ignore
