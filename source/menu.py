@@ -17,7 +17,8 @@ class Menu:
             [sg.Frame("",
                 [
                     [sg.Push(), sg.Button(button_text="X", key="CHIUDI", size=2)],
-                    [sg.Image("assets/title.png")],
+                    [sg.Image("assets/title.png", background_color="OrangeRed3")],
+                    [sg.Push(background_color="OrangeRed3"), sg.Image("assets/icon.png", background_color="OrangeRed3"), sg.Push(background_color="OrangeRed3")],
                     [sg.Combo(self.dungeons, key="-DUNGEON-", default_value=self.default_dungeon, readonly=True, enable_events=True, expand_x=True)], 
                     [
                         sg.Combo(self.saves, key="-SAVE-", default_value=self.default_save, readonly=True, enable_events=True, size=(33, 100)),

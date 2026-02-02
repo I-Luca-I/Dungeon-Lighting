@@ -51,7 +51,7 @@ class Masks:
         shadow_surf.blit(source=light_mask.to_surface(setcolor=(255, 255, 255, 0), unsetcolor=None), dest=buffer_dest)
         buffer.blit(source=shadow_mask.to_surface(setsurface=shadow_surf, unsetcolor=(0, 0, 0)), dest=(0, 0))
 
-        #buffer.blit(source=shadow_mask.to_surface(setcolor=(0, 0, 0, 100), unsetcolor=None), dest=(0, 0))
-        #buffer.blit(source=light_mask.to_surface(setcolor=(255, 255, 255, 0), unsetcolor=None), dest=buffer_dest)
-        #shadow_mask.draw(light_mask, buffer_dest)
-        #buffer.blit(source=shadow_mask.to_surface(setcolor=None, unsetcolor=(0, 0, 0)), dest=(0, 0))
+        # buffer.blit(source=shadow_mask.to_surface(setcolor=(0, 0, 0, 100), unsetcolor=None), dest=(0, 0))
+        # buffer.blit(source=light_mask.to_surface(setcolor=(255, 255, 255, 0), unsetcolor=None), dest=buffer_dest)
+        # shadow_mask.draw(light_mask, buffer_dest)
+        # buffer.blit(source=shadow_mask.to_surface(setcolor=None, unsetcolor=(0, 0, 0)), dest=(0, 0))

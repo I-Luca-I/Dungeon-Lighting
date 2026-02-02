@@ -121,8 +121,9 @@ class Game:
                 pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
                 pygame.draw.circle(buffer, (0, 255, 0), self.mouse_coords, 1, 1)
 
-            ### Print buffer on screen
+            ### Print buffer and frame on screen
             screen = pygame.display.get_surface()
+            # (not a major improvement in perfortmace) buffer.blit(source=pygame.transform.scale_by(surface=self.frame, factor=(1/self.zoom_factor)), dest=(-self.camera_offset)*(1/self.zoom_factor))
             screen.blit(
                 source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor),
                 dest=self.camera_offset
@@ -130,7 +131,7 @@ class Game:
             screen.blit(source=self.frame, dest=(0, 0))
             pygame.display.flip()
 
-            timer.add_breakpoint("end_loop")
+            timer.add_breakpoint("buffer+frame_drw")
             print(f"Times: {timer.printable}")
 
             if (self.debug_mode):
