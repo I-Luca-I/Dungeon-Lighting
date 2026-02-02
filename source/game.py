@@ -125,14 +125,17 @@ class Game:
             screen = pygame.display.get_surface()
             # (not a major improvement in perfortmace) buffer.blit(source=pygame.transform.scale_by(surface=self.frame, factor=(1/self.zoom_factor)), dest=(-self.camera_offset)*(1/self.zoom_factor))
             screen.blit(
-                source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor),
+                source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
+                # source=buffer,
                 dest=self.camera_offset
             )
             screen.blit(source=self.frame, dest=(0, 0))
-            pygame.display.flip()
 
+            pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
-            print(f"Times: {timer.printable}")
+
+            print(f"Times: {timer.mid_printable}")
+            print("\033[1A", end="")
 
             if (self.debug_mode):
                 print(f"FPS: {self.clock.get_fps()}")

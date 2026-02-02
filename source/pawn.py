@@ -106,8 +106,9 @@ class Pawn:
 
         if (
             self.moving and 
-            collision_mask.overlap_area(self.hitbox, mouse_coords + self.mouse_offset - (self.texture.get_width()//2, self.texture.get_height()//2)) < 50 and
+            collision_mask.overlap_area(self.hitbox, mouse_coords + self.mouse_offset - (self.texture.get_width()//2, self.texture.get_height()//2)) == 0 and
             collision_mask.overlap_area(pygame.mask.from_surface(line_of_sight), (0, 0)) == 0
+
         ):
             self.position = pygame.Vector2(mouse_coords[0] + self.mouse_offset[0], mouse_coords[1] + self.mouse_offset[1])
 
