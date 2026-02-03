@@ -101,13 +101,21 @@ class Pawn:
         elif (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
             self.moving = False
 
+        # ho fatto questa modifica al check di line of sight, scala male con la grandezza del dungeon ma è fatta apposta per fixare il problema del movimento
+        # che si presentava con i muri da pochi pixel, quindi una volta fatti i chunk offre la possibilità di usare mappe di risoluzione bassa come Labyrinth2
+        # con performance non particolarmente impattata
         line_of_sight = pygame.surface.Surface(size=collision_mask.get_size(), flags=pygame.SRCALPHA)
-        pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position, mouse_coords)
-
+        versore_perpendicolare = pygame.Vector2(1,1)
+        if (math.sqrt((mouse_coords[0]-self.position[0])**2+(mouse_coords[1]-self.position[1])**2)) != 0:
+            versore_perpendicolare = pygame.Vector2(-(mouse_coords[1]-self.position[1]), (mouse_coords[0]-self.position[0]))*(1/(math.sqrt((mouse_coords[0]-self.position[0])**2+(mouse_coords[1]-self.position[1])**2)))
+        semibase = 3
+        for i in range(semibase):
+            pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position + versore_perpendicolare * i, mouse_coords + versore_perpendicolare * i)
+            pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position - versore_perpendicolare * i, mouse_coords - versore_perpendicolare * i)
         if (
             self.moving and 
-            collision_mask.overlap_area(self.hitbox, mouse_coords + self.mouse_offset - (self.texture.get_width()//2, self.texture.get_height()//2)) == 0 and
-            collision_mask.overlap_area(pygame.mask.from_surface(line_of_sight), (0, 0)) == 0
+            collision_mask.overlap_area(self.hitbox, mouse_coords + self.mouse_offset - (self.texture.get_width()//2, self.texture.get_height()//2)) < 5 and
+            collision_mask.overlap_area(pygame.mask.from_surface(line_of_sight), (0, 0)) < 5
 
         ):
             self.position = pygame.Vector2(mouse_coords[0] + self.mouse_offset[0], mouse_coords[1] + self.mouse_offset[1])

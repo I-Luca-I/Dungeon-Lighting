@@ -46,7 +46,7 @@ class Masks:
         # buffer.blit(source=shadow_mask.to_surface(surface=shadow_overlay, setsurface=shadow_overlay, unsetcolor=(0, 0, 0)), dest=(0, 0))
 
         shadow_mask.erase(light_mask, buffer_dest)
-        shadow_surf = shadow_mask.to_surface(setcolor=(0, 0, 0, 100), unsetcolor=None)
+        shadow_surf = shadow_mask.to_surface(setcolor=(0, 0, 0, 125), unsetcolor=None)
         shadow_mask.draw(light_mask, buffer_dest)
         shadow_surf.blit(source=light_mask.to_surface(setcolor=(255, 255, 255, 0), unsetcolor=None), dest=buffer_dest)
         buffer.blit(source=shadow_mask.to_surface(setsurface=shadow_surf, unsetcolor=(0, 0, 0)), dest=(0, 0))
