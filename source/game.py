@@ -1,4 +1,4 @@
-import pygame, json, os, datetime
+import pygame, json, os, datetime, math
 from . import pawn, mask, door, time
 
 class Game:
@@ -33,6 +33,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.debug_mode = bool(self.settings["debug_mode"])
+        self.chase_mode = bool(self.settings["chase_mode"])
         pygame.display.set_caption("Dungeon//Lighting")
         pygame.display.set_icon(icon)
 
@@ -102,39 +103,48 @@ class Game:
             self.party.update(self.collision_mask)
             timer.add_breakpoint("party_upd")
 
-            mask.Masks.update_light(self.shadow_mask, self.light_mask, self.party)
+            mask.Masks.update_light(self.light_mask, self.party)
             timer.add_breakpoint("light_upd")
 
-            #mask.Masks.draw_light(buffer, self.shadow_mask, self.light_mask, self.party)
-            #timer.add_breakpoint("light_drw")
+            mask.Masks.draw_light(buffer, self.shadow_mask, self.light_mask, self.party, self.chase_mode)
+            timer.add_breakpoint("light_drw")
 
-            #             #self.party.draw(buffer, self.debug_mode)
-            #             #timer.add_breakpoint("party_drw")
-            #
-            #             #if (self.debug_mode):
-            #             #    for door in self.doors:
-            #             #        if door.is_open:
-            #             #            buffer.blit(source=door.mask.to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=door.coord)
-            #        else:
-            #            buffer.blit(source=door.mask.to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=door.coord)
+            self.party.draw(buffer, self.debug_mode)
+            timer.add_breakpoint("party_drw")
 
-            #    pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
-            #    pygame.draw.circle(buffer, (0, 255, 0), self.mouse_coords, 1, 1)
+            if (self.debug_mode):
+                for door in self.doors:
+                    if door.is_open:
+                        buffer.blit(source=door.mask.to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=door.coord)
+                    else:
+                        buffer.blit(source=door.mask.to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=door.coord)
+
+                pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
+                
+                versore_perpendicolare = pygame.Vector2(1,1)
+                if (math.sqrt((self.mouse_coords[0]-self.party.position[0])**2+(self.mouse_coords[1]-self.party.position[1])**2)) != 0:
+                    versore_perpendicolare = pygame.Vector2(-(self.mouse_coords[1]-self.party.position[1]), (self.mouse_coords[0]-self.party.position[0]))*(1/(math.sqrt((self.mouse_coords[0]-self.party.position[0])**2+(self.mouse_coords[1]-self.party.position[1])**2)))
+                semibase = 4
+                for i in range(semibase):
+                    pygame.draw.line(buffer, (0, 255, 0, 255), self.party.position + versore_perpendicolare * i, self.mouse_coords + versore_perpendicolare * i)
+                    pygame.draw.line(buffer, (0, 255, 0, 255), self.party.position - versore_perpendicolare * i, self.mouse_coords - versore_perpendicolare * i)
+                
+                pygame.draw.circle(buffer, (0, 255, 0), self.mouse_coords, 1, 1)
 
             ### Print buffer and frame on screen
             screen = pygame.display.get_surface()
-            #screen.blit(
-            #    source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
+            screen.blit(
+               source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
                 # source=buffer,
-            #    dest=self.camera_offset
-            #)
+               dest=self.camera_offset
+            )
             screen.blit(source=self.frame, dest=(0, 0))
 
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
 
-            print(f"Times: {timer.mid_printable}")
-            print("\033[1A", end="")
+            # print(f"Times: {timer.mid_printable}")
+            # print("\033[1A", end="")
 
             if (self.debug_mode):
                 print(f"FPS: {self.clock.get_fps()}")
@@ -202,6 +212,11 @@ class Game:
                 if event.key == pygame.K_F4:
                     self.debug_mode = not self.debug_mode
 
+                ### Chase mode
+                if event.key == pygame.K_c:
+                    self.chase_mode = not self.chase_mode
+                    print("DUCE")
+
             ### Zoom (REDO)
             if event.type == pygame.MOUSEWHEEL:
                 if (event.y > 0):
@@ -224,7 +239,8 @@ class Game:
             "party_position": [self.party.position[0], self.party.position[1]],
             "party_radius": self.party.radius,
             "camera_offset": [self.camera_offset[0], self.camera_offset[1]],
-            "debug_mode": self.debug_mode
+            "debug_mode": self.debug_mode,
+            "chase_mode": self.chase_mode
         }
 
         os.makedirs(f"saves/dungeon_{id}", exist_ok=True)
