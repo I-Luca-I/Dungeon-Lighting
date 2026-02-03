@@ -105,29 +105,29 @@ class Game:
             mask.Masks.update_light(self.shadow_mask, self.light_mask, self.party)
             timer.add_breakpoint("light_upd")
 
-            mask.Masks.draw_light(buffer, self.shadow_mask, self.light_mask, self.party)
-            timer.add_breakpoint("light_drw")
+            #mask.Masks.draw_light(buffer, self.shadow_mask, self.light_mask, self.party)
+            #timer.add_breakpoint("light_drw")
 
-            self.party.draw(buffer, self.debug_mode)
-            timer.add_breakpoint("party_drw")
+            #             #self.party.draw(buffer, self.debug_mode)
+            #             #timer.add_breakpoint("party_drw")
+            #
+            #             #if (self.debug_mode):
+            #             #    for door in self.doors:
+            #             #        if door.is_open:
+            #             #            buffer.blit(source=door.mask.to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=door.coord)
+            #        else:
+            #            buffer.blit(source=door.mask.to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=door.coord)
 
-            if (self.debug_mode):
-                for door in self.doors:
-                    if door.is_open:
-                        buffer.blit(source=door.mask.to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=door.coord)
-                    else:
-                        buffer.blit(source=door.mask.to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=door.coord)
-
-                pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
-                pygame.draw.circle(buffer, (0, 255, 0), self.mouse_coords, 1, 1)
+            #    pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
+            #    pygame.draw.circle(buffer, (0, 255, 0), self.mouse_coords, 1, 1)
 
             ### Print buffer and frame on screen
             screen = pygame.display.get_surface()
-            screen.blit(
-                source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
+            #screen.blit(
+            #    source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
                 # source=buffer,
-                dest=self.camera_offset
-            )
+            #    dest=self.camera_offset
+            #)
             screen.blit(source=self.frame, dest=(0, 0))
 
             pygame.display.flip()

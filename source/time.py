@@ -22,4 +22,3 @@ class timer:
     def add_breakpoint(self, title:str="default") -> None:
         self.data.append(time.time())
         self.title.append(title)
-        
