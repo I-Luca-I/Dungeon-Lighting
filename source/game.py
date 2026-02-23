@@ -28,7 +28,7 @@ class Game:
         ### Pygame setup
         info = pygame.display.Info()
         pygame.display.set_mode(
-            size=(1920,1080)
+            size=(info.current_w, info.current_h)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -156,7 +156,6 @@ class Game:
             volte = 0
             if self.zoom_factor != self.last_zoom_factor:
                 volte += 1
-                print(volte)
                 screen.blit(
                    source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
                     # source=buffer,
@@ -173,8 +172,8 @@ class Game:
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
 
-            print(f"Times: {timer.mid_printable}")
-            print("\033[1A", end="")
+            # print(f"Times: {timer.mid_printable}")
+            # print("\033[1A", end="")
 
             if (self.debug_mode):
                 print(f"FPS: {self.clock.get_fps()}")
@@ -221,6 +220,7 @@ class Game:
                     if smaller_distance == 0 or abs(self.mouse_coords[0] - adoor.coord[0]) + abs(self.mouse_coords[1] - adoor.coord[1]) < smaller_distance:
                         smaller_distance = abs(self.mouse_coords[0] - adoor.coord[0]) + abs(self.mouse_coords[1] - adoor.coord[1])
                         closest_door = adoor
+
                 ### door cursor state
                 cursor = self.cursors["open_door"] if not(closest_door.states["is_open"]) else self.cursors["close_door"]
                 pygame.mouse.set_cursor(cursor)

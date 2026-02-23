@@ -37,7 +37,7 @@ class Triggerable:
                     while (big_mask.overlap_area(pygame.mask.Mask(temp_size, fill=True),(j * acc, i * acc)) - big_mask.overlap_area(pygame.mask.Mask(last_size, fill=True), (j * acc, i * acc))):
                         last_size = temp_size
                         temp_size = [temp_size[0] + step, temp_size[1]]
-                    instance = Triggerable({"main_mask": pygame.mask.Mask(size=temp_size, fill=False)}, pygame.Vector2(j * acc, i * acc), starting_states_dict)
+                    instance = Triggerable({"main_mask": pygame.mask.Mask(size=temp_size, fill=False)}, pygame.Vector2(j * acc, i * acc), dict(starting_states_dict))
                     instance.masks["main_mask"].draw(big_mask, (j * -acc, i * -acc))
                     instances_list.append(instance)
                     last_size = [acc, acc]
@@ -57,7 +57,7 @@ class Triggerable:
 
         instances_list = []
         for x in instance_groups_list:
-            instances_list.append(Triggerable({"main_mask": x[0]}, x[1], starting_states_dict))
+            instances_list.append(Triggerable({"main_mask": x[0]}, x[1], dict(starting_states_dict)))
         return instances_list
 
 
