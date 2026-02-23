@@ -30,7 +30,7 @@ class Menu:
             )]
         ]
 
-        self.window = sg.Window("--DUNGEON LIGHTING--", layout=layout, icon="assets/icon.ico", no_titlebar=True, grab_anywhere=True)
+        self.window = sg.Window("--DUNGEON LIGHTING--", layout=layout, icon="assets/icon.ico", no_titlebar=True, grab_anywhere=True, keep_on_top=True)
 
     def run(self) -> dict:
         id = ""

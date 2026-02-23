@@ -109,7 +109,8 @@ class Pawn:
         if (math.sqrt((mouse_coords[0]-self.position[0])**2+(mouse_coords[1]-self.position[1])**2)) != 0:
             versore_perpendicolare = pygame.Vector2(-(mouse_coords[1]-self.position[1]), (mouse_coords[0]-self.position[0]))*(1/(math.sqrt((mouse_coords[0]-self.position[0])**2+(mouse_coords[1]-self.position[1])**2)))
         semibase = 3  # da fare un modo dinamico (basato sulla grandezza del dungeon) per calcolarla (la semibase)
-        for i in range(semibase):
+        pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position, mouse_coords)
+        for i in range(1, semibase):
             pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position + versore_perpendicolare * i, mouse_coords + versore_perpendicolare * i)
             pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position - versore_perpendicolare * i, mouse_coords - versore_perpendicolare * i)
         if (

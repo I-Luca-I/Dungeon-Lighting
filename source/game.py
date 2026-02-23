@@ -1,5 +1,5 @@
 import pygame, json, os, datetime, math
-from . import pawn, mask, door, time
+from . import pawn, mask, triggerables, time
 
 class Game:
     def __init__(self, id:str, save:str) -> None:
@@ -8,7 +8,7 @@ class Game:
 
         ### Load local data
         dungeon_img = pygame.image.load(f"saves/dungeon_{self.id}/dungeon_{self.id}.png")
-        doors_img = pygame.image.load(f"saves/dungeon_{self.id}/doors_{self.id}.png")
+        triggerables_img = pygame.image.load(f"saves/dungeon_{self.id}/triggerables_{self.id}.png")
         try:
             shadow_mask_img = pygame.image.load(f"saves/dungeon_{self.id}/{self.save}_light_mask.png")
         except:
@@ -28,7 +28,7 @@ class Game:
         ### Pygame setup
         info = pygame.display.Info()
         pygame.display.set_mode(
-            size=(info.current_w, info.current_h)
+            size=(1920,1080)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -55,16 +55,22 @@ class Game:
             size=float(self.settings["party_size"]),
         )
 
+        ### DM mode setup
+        self.add_light_in_mouse_pos = False
+        ### keyboard repeat inputs
+        pygame.key.set_repeat(10, 10)
+
         ### Camera
         self.zoom_exponent = int(self.settings["zoom_exponent"])
         self.zoom_factor = 1.1 ** self.zoom_exponent
+        self.last_zoom_factor = self.zoom_factor
         self.scrolling = False
         self.camera_offset = pygame.Vector2(self.settings["camera_offset"])
 
         ### Surfaces
         self.dungeon = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))
         self.dungeon.blit(dungeon_img, (0, 0))
-        self.door_surface = doors_img
+        self.triggerables_surface = triggerables_img
         self.frame = pygame.surface.Surface(size=(frame_img.get_width(), frame_img.get_height()), flags=pygame.SRCALPHA)
         self.frame.blit(pygame.transform.rotozoom(frame_img, 0, info.current_w/frame_img.get_width()), (0, 0))
 
@@ -74,8 +80,10 @@ class Game:
         shadow_surface.blit(shadow_mask_img, (0, 0))
         self.shadow_mask = pygame.mask.from_threshold(surface=shadow_surface, color=(255, 255, 255), threshold=(1, 1, 1))
         self.light_mask = pygame.mask.Mask(size=(self.party.radius*2, self.party.radius*2), fill=False)
-        self.door_mask = door.Door.get_door_mask(self.door_surface)
-        self.doors = door.Door.get_doors(self.door_mask)
+        self.door_mask = triggerables.Door.get_door_mask(self.triggerables_surface)
+        self.doors = triggerables.Door.get_doors(self.door_mask)
+        self.stairs_mask = triggerables.Stairs.get_stairs_mask(self.triggerables_surface)
+        self.stairs = triggerables.Stairs.get_stairs(self.stairs_mask)
     
     def run(self) -> None:
         timer = time.timer()
@@ -89,6 +97,7 @@ class Game:
             
             if (pygame.display.get_surface().get_width() > self.dungeon.get_width()*self.zoom_factor or pygame.display.get_surface().get_height() > self.dungeon.get_height()*self.zoom_factor):
                 self.zoom_exponent += 1
+                self.last_zoom_factor = self.zoom_factor
                 self.zoom_factor = 1.1 ** self.zoom_exponent
             self.camera_offset[0] = min(0, max(self.camera_offset[0], pygame.display.get_surface().get_width()-self.dungeon.get_width()*self.zoom_factor))
             self.camera_offset[1] = min(0, max(self.camera_offset[1], pygame.display.get_surface().get_height()-self.dungeon.get_height()*self.zoom_factor))
@@ -112,12 +121,23 @@ class Game:
             self.party.draw(buffer, self.debug_mode)
             timer.add_breakpoint("party_drw")
 
+            if (self.add_light_in_mouse_pos):
+                self.add_light_in_mouse_pos = False
+                instant_light = pawn.Pawn(position=pygame.Vector2(pygame.mouse.get_pos())//self.zoom_factor - self.camera_offset//self.zoom_factor, radius=30, img=pygame.Surface(size=(1,1)), size=1)
+                instant_light.update(self.collision_mask)
+                instant_light.draw(buffer, self.debug_mode)
+                instant_light_mask = pygame.mask.Mask(size=(instant_light.radius*2, instant_light.radius*2), fill=False)
+                mask.Masks.update_light(instant_light_mask, instant_light)
+                mask.Masks.draw_light(buffer, self.shadow_mask, instant_light_mask, instant_light, self.chase_mode)
+
             if (self.debug_mode):
                 for door in self.doors:
-                    if door.is_open:
-                        buffer.blit(source=door.mask.to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=door.coord)
+                    if door.states["is_open"]:
+                        buffer.blit(source=door.masks["main_mask"].to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=door.coord)
                     else:
-                        buffer.blit(source=door.mask.to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=door.coord)
+                        buffer.blit(source=door.masks["main_mask"].to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=door.coord)
+                for stairs in self.stairs:
+                    buffer.blit(source=stairs.masks["main_mask"].to_surface(setcolor=(255, 128, 0), unsetcolor=None), dest=stairs.coord)
 
                 pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
                 
@@ -133,18 +153,28 @@ class Game:
 
             ### Print buffer and frame on screen
             screen = pygame.display.get_surface()
-            screen.blit(
-               source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
-                # source=buffer,
-               dest=self.camera_offset
-            )
+            volte = 0
+            if self.zoom_factor != self.last_zoom_factor:
+                volte += 1
+                print(volte)
+                screen.blit(
+                   source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
+                    # source=buffer,
+                   dest=self.camera_offset
+                )
+            else:
+                screen.blit(
+                    # source=pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor),  # SLOOOOOW
+                    source=buffer,
+                    dest=self.camera_offset
+                )
             screen.blit(source=self.frame, dest=(0, 0))
 
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
 
-            # print(f"Times: {timer.mid_printable}")
-            # print("\033[1A", end="")
+            print(f"Times: {timer.mid_printable}")
+            print("\033[1A", end="")
 
             if (self.debug_mode):
                 print(f"FPS: {self.clock.get_fps()}")
@@ -183,7 +213,7 @@ class Game:
                 self.scrolling = False
 
             ### Door interaction
-            if door.Door.check_door_click(self.door_mask, self.shadow_mask, self.mouse_coords) and not self.party.moving:
+            if triggerables.Door.check_click(self.door_mask, self.shadow_mask, self.mouse_coords) and not self.party.moving:
                 ### finding closest door
                 closest_door = self.doors[0]
                 smaller_distance = abs(self.mouse_coords[0] - closest_door.coord[0]) + abs(self.mouse_coords[1] - closest_door.coord[1])
@@ -192,11 +222,28 @@ class Game:
                         smaller_distance = abs(self.mouse_coords[0] - adoor.coord[0]) + abs(self.mouse_coords[1] - adoor.coord[1])
                         closest_door = adoor
                 ### door cursor state
-                cursor = self.cursors["open_door"] if not(closest_door.is_open) else self.cursors["close_door"]
+                cursor = self.cursors["open_door"] if not(closest_door.states["is_open"]) else self.cursors["close_door"]
                 pygame.mouse.set_cursor(cursor)
                 ### door trigger
                 if pygame.mouse.get_pressed()[0]:
                     closest_door.trigger(self.collision_mask)
+
+            ### Stairs interaction
+            if triggerables.Stairs.check_click(self.stairs_mask, self.shadow_mask, self.mouse_coords) and not self.party.moving:
+                ### finding closest stairs
+                closest_stairs = self.stairs[0]
+                smaller_distance = abs(self.mouse_coords[0] - closest_stairs.coord[0]) + abs(self.mouse_coords[1] - closest_stairs.coord[1])
+                for stairs in self.stairs:
+                    if smaller_distance == 0 or abs(self.mouse_coords[0] - stairs.coord[0]) + abs(self.mouse_coords[1] - stairs.coord[1]) < smaller_distance:
+                        smaller_distance = abs(self.mouse_coords[0] - stairs.coord[0]) + abs(self.mouse_coords[1] - stairs.coord[1])
+                        closest_stairs = stairs
+                ### stairs cursor state
+                cursor = self.cursors["open_door"] if not closest_stairs.states["triggered"] else self.cursors["close_door"]
+                pygame.mouse.set_cursor(cursor)
+                ### stairs trigger
+                if pygame.mouse.get_pressed()[0]:
+                    self.move_camera(closest_stairs.trigger(self.id, self.stairs))
+                    self.party.position = closest_stairs.trigger(self.id, self.stairs)
 
             if event.type == pygame.KEYDOWN:
                 ### Center to party
@@ -215,7 +262,14 @@ class Game:
                 ### Chase mode
                 if event.key == pygame.K_c:
                     self.chase_mode = not self.chase_mode
-                    print("DUCE")
+
+                ### DM mode
+
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_d]:
+                    ### Add instant light source
+                    if pygame.mouse.get_pressed()[0] and not self.party.moving:
+                        self.add_light_in_mouse_pos = True
 
             ### Zoom (REDO)
             if event.type == pygame.MOUSEWHEEL:
@@ -224,6 +278,7 @@ class Game:
 
                 else:
                     self.zoom_exponent -= 1
+                self.last_zoom_factor = self.zoom_factor
                 self.zoom_factor = 1.1 ** self.zoom_exponent
                 self.move_camera(self.party.position)
                 self.party.moving = False
