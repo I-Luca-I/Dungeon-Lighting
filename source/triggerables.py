@@ -62,11 +62,9 @@ class Triggerable:
 
 
 class Stairs(Triggerable):
-    def trigger(self, game_id:str, stairs_list:list) -> pygame.Vector2:
+    def trigger(self, game_id:str, stairs_list:list, stairs_destinations:list) -> pygame.Vector2:
         self.id = stairs_list.index(self)
-        with open(f"saves/dungeon_{game_id}/stairs_{game_id}.json", "r") as file:
-            dict = json.load(file)
-        self.destination = dict["stairs destinations"][self.id]
+        self.destination = stairs_destinations[self.id]
         return pygame.Vector2(self.destination)
 
     @staticmethod

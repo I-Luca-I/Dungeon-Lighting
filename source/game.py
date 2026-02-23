@@ -34,6 +34,7 @@ class Game:
         self.running = True
         self.debug_mode = bool(self.settings["debug_mode"])
         self.chase_mode = bool(self.settings["chase_mode"])
+        self.stairs_destinations = self.settings["stairs_destinations"]
         pygame.display.set_caption("Dungeon//Lighting")
         pygame.display.set_icon(icon)
 
@@ -242,8 +243,8 @@ class Game:
                 pygame.mouse.set_cursor(cursor)
                 ### stairs trigger
                 if pygame.mouse.get_pressed()[0]:
-                    self.move_camera(closest_stairs.trigger(self.id, self.stairs))
-                    self.party.position = closest_stairs.trigger(self.id, self.stairs)
+                    self.move_camera(closest_stairs.trigger(self.id, self.stairs, self.stairs_destinations))
+                    self.party.position = closest_stairs.trigger(self.id, self.stairs, self.stairs_destinations)
 
             if event.type == pygame.KEYDOWN:
                 ### Center to party
@@ -295,7 +296,8 @@ class Game:
             "party_radius": self.party.radius,
             "camera_offset": [self.camera_offset[0], self.camera_offset[1]],
             "debug_mode": self.debug_mode,
-            "chase_mode": self.chase_mode
+            "chase_mode": self.chase_mode,
+            "stairs_destinations": self.stairs_destinations
         }
 
         os.makedirs(f"saves/dungeon_{id}", exist_ok=True)
