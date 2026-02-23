@@ -200,7 +200,7 @@ class Game:
                 pygame.mouse.set_cursor(self.cursors["normal"])
 
             ### Screen scrolling
-            if pygame.mouse.get_pressed()[0] and not self.party.moving:
+            if pygame.mouse.get_pressed()[0] and not self.party.moving and not self.dm_mode:
                 if not self.scrolling:
                     self.scrolling = True
                     self.previous_mouse_pos = pygame.mouse.get_pos()
@@ -268,9 +268,12 @@ class Game:
 
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_d]:
+                    self.dm_mode = True
                     ### Add instant light source
                     if pygame.mouse.get_pressed()[0] and not self.party.moving:
                         self.add_light_in_mouse_pos = True
+                else:
+                    self.dm_mode = False
 
             ### Zoom (REDO)
             if event.type == pygame.MOUSEWHEEL:
