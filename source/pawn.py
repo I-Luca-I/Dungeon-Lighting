@@ -95,31 +95,110 @@ class Pawn:
     def move(self, event:pygame.event.Event, mouse_coords:pygame.Vector2, collision_mask:pygame.Mask) -> None:
         x = (mouse_coords[0] - self.position[0] + self.texture.get_width()//2)
         y = (mouse_coords[1] - self.position[1] + self.texture.get_height()//2)
+        
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 0 <= x < self.texture.get_size()[0] and  0 <= y < self.texture.get_size()[1]):
             self.moving = True
             self.mouse_offset = self.position - mouse_coords
         elif (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
             self.moving = False
 
+        x = (mouse_coords[0] - self.position[0])
+        y = (mouse_coords[1] - self.position[1])
+
+        self.mouse_endpoints = []
+        self.mouse_startpoints = []
+        for i in range(0, self.max_rays, self.max_rays//100):
+            end = mouse_coords
+            start = (
+                max(0, min(int(end[0] - (math.sqrt(x**2 + y**2) * cos_cache[i])), collision_mask.get_size()[0] - 1)),
+                max(0, min(int(end[1] - (math.sqrt(x**2 + y**2) * sin_cache[i])), collision_mask.get_size()[1] - 1))
+            )
+            self.mouse_startpoints.append(start)
+
+            m = float(start[1]-end[1])/float(start[0]-end[0]) if (start[0] != end[0]) else collision_mask.get_size()[1]
+            q = start[1] - m*start[0]
+            dx = abs(start[0]-end[0])
+            dy = abs(start[1]-end[1])
+
+            interrupt = False
+            
+            if(dx > dy):
+                for j in range(int(start[0]), int(end[0]), 1 if end[0] > start[0] else -1):
+                    if (collision_mask.get_at((j, int(m*j+q))) == 1):
+                        self.mouse_endpoints.append([j, int(m*j+q)])
+                        interrupt = True
+                        break
+            else:  
+                for j in range(int(start[1]), int(end[1]), 1 if end[1] > start[1] else -1):
+                    if (collision_mask.get_at((int((j-q)/m), j)) == 1):
+                        self.mouse_endpoints.append([int((j-q)/m), j])
+                        interrupt = True
+                        break
+
+            if (not(interrupt)):
+                self.mouse_endpoints.append([end[0], end[1]])
+
+        i = 0
+        while (i < len(self.mouse_endpoints)):
+            start = self.position
+            end = self.mouse_endpoints[i]
+
+            m = float(start[1]-end[1])/float(start[0]-end[0]) if (start[0] != end[0]) else collision_mask.get_size()[1]
+            q = start[1] - m*start[0]
+            dx = abs(start[0]-end[0])
+            dy = abs(start[1]-end[1])
+
+            interrupt = False
+            
+            if(dx > dy):
+                for j in range(int(start[0]), int(end[0]), 1 if end[0] > start[0] else -1):
+                    if (collision_mask.get_at((j, int(m*j+q))) == 1):
+                        interrupt = True
+                        break
+            else:  
+                for j in range(int(start[1]), int(end[1]), 1 if end[1] > start[1] else -1):
+                    if (collision_mask.get_at((int((j-q)/m), j)) == 1):
+                        interrupt = True
+                        break
+            
+            if (interrupt):
+                self.mouse_startpoints.pop(i)
+                self.mouse_endpoints.pop(i)
+            else:
+                i += 1
+
+        self.min_dist_index = 0
+        for i in range(len(self.mouse_endpoints)):
+            dist = abs(mouse_coords[0]-self.mouse_endpoints[i][0]) + abs(mouse_coords[1]-self.mouse_endpoints[i][1])
+            min_dist = abs(mouse_coords[0]-self.mouse_endpoints[self.min_dist_index][0]) + abs(mouse_coords[1]-self.mouse_endpoints[self.min_dist_index][1])
+            if (dist < min_dist):
+                self.min_dist_index = i
+
+        if (self.moving and len(self.mouse_endpoints) > 0):
+            self.position = pygame.Vector2 (
+                self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0], 
+                self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1] + self.texture.get_height()//2
+            )
+
         # ho fatto questa modifica al check di line of sight, scala male con la grandezza del dungeon ma è fatta apposta per fixare il problema del movimento
         # che si presentava con i muri da pochi pixel, quindi una volta fatti i chunk offre la possibilità di usare mappe di risoluzione bassa come Labyrinth_2
         # con performance non impattata affatto
-        line_of_sight = pygame.surface.Surface(size=collision_mask.get_size(), flags=pygame.SRCALPHA)
-        versore_perpendicolare = pygame.Vector2(1,1)
-        if (math.sqrt((mouse_coords[0]-self.position[0])**2+(mouse_coords[1]-self.position[1])**2)) != 0:
-            versore_perpendicolare = pygame.Vector2(-(mouse_coords[1]-self.position[1]), (mouse_coords[0]-self.position[0]))*(1/(math.sqrt((mouse_coords[0]-self.position[0])**2+(mouse_coords[1]-self.position[1])**2)))
-        semibase = 3  # da fare un modo dinamico (basato sulla grandezza del dungeon) per calcolarla (la semibase)
-        pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position, mouse_coords)
-        for i in range(1, semibase):
-            pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position + versore_perpendicolare * i, mouse_coords + versore_perpendicolare * i)
-            pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position - versore_perpendicolare * i, mouse_coords - versore_perpendicolare * i)
-        if (
-            self.moving and 
-            collision_mask.overlap_area(self.hitbox, mouse_coords + self.mouse_offset - (self.texture.get_width()//2, self.texture.get_height()//2)) < (semibase*2 -1) and
-            collision_mask.overlap_area(pygame.mask.from_surface(line_of_sight), (0, 0)) < (semibase*2 -1)  # semibase*2 -1 = numero di raggi paralleli della line of sight
+        # line_of_sight = pygame.surface.Surface(size=collision_mask.get_size(), flags=pygame.SRCALPHA)
+        # versore_perpendicolare = pygame.Vector2(1,1)
+        # if (math.sqrt((mouse_coords[0]-self.position[0])**2+(mouse_coords[1]-self.position[1])**2)) != 0:
+        #     versore_perpendicolare = pygame.Vector2(-(mouse_coords[1]-self.position[1]), (mouse_coords[0]-self.position[0]))*(1/(math.sqrt((mouse_coords[0]-self.position[0])**2+(mouse_coords[1]-self.position[1])**2)))
+        # semibase = 2  # da fare un modo dinamico (basato sulla grandezza del dungeon) per calcolarla (la semibase)
+        # pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position, mouse_coords)
+        # for i in range(1, semibase):
+        #     pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position + versore_perpendicolare * i, mouse_coords + versore_perpendicolare * i)
+        #     pygame.draw.line(line_of_sight, (0, 255, 0, 255), self.position - versore_perpendicolare * i, mouse_coords - versore_perpendicolare * i)
+        # if (
+        #     self.moving and 
+        #     collision_mask.overlap_area(self.hitbox, mouse_coords + self.mouse_offset - (self.texture.get_width()//2, self.texture.get_height()//2)) < (semibase*2 -1) and
+        #     collision_mask.overlap_area(pygame.mask.from_surface(line_of_sight), (0, 0)) < (semibase*2 -1)  # semibase*2 -1 = numero di raggi paralleli della line of sight
 
-        ):
-            self.position = pygame.Vector2(mouse_coords[0] + self.mouse_offset[0], mouse_coords[1] + self.mouse_offset[1])
+        # ):
+        #     self.position = pygame.Vector2(mouse_coords[0] + self.mouse_offset[0], mouse_coords[1] + self.mouse_offset[1])
 
         # self.polygon_surface = pygame.surface.Surface(size=collision_mask.get_size())
         # if len(self.endpoints) > 2:
@@ -133,11 +212,17 @@ class Pawn:
         if (debug_mode):
             ### Rays
             for i in range(len(self.endpoints)):
-                pygame.draw.line(buffer, (255, 0, 0), (self.position[0], self.position[1]), (self.endpoints[i][0], self.endpoints[i][1]))
+                pygame.draw.line(buffer, (255, 0, 0), self.position, self.endpoints[i])
 
             ### Mask
             if len(self.endpoints) > 2:
                 pygame.draw.polygon(buffer, (255, 0, 0), self.endpoints, 1)
+
+            for i in range(len(self.mouse_endpoints)):
+                pygame.draw.line(buffer, (255, 255, 0), self.mouse_startpoints[i], self.mouse_endpoints[i])
+            
+            if (len(self.mouse_endpoints) > 0):
+                pygame.draw.circle(buffer, (0, 0, 255), self.mouse_endpoints[self.min_dist_index], 2)
         
         buffer.blit(
             self.texture,
