@@ -95,6 +95,7 @@ class Pawn:
     def move(self, event:pygame.event.Event, mouse_coords:pygame.Vector2, collision_mask:pygame.Mask) -> None:
         x = (mouse_coords[0] - self.position[0] + self.texture.get_width()//2)
         y = (mouse_coords[1] - self.position[1] + self.texture.get_height()//2)
+        offset = (self.position - mouse_coords)*(1/(math.sqrt((self.position[0] - mouse_coords[0])**2+(self.position[1] - mouse_coords[1])**2)) if (self.position - mouse_coords != (0,0)) else 1)*self.texture.get_width()//8
         
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 0 <= x < self.texture.get_size()[0] and  0 <= y < self.texture.get_size()[1]):
             self.moving = True
@@ -107,11 +108,11 @@ class Pawn:
 
         self.mouse_endpoints = []
         self.mouse_startpoints = []
-        for i in range(0, self.max_rays, self.max_rays//100):
+        for i in range(0, self.max_rays, self.max_rays//500):
             end = mouse_coords
             start = (
-                max(0, min(int(end[0] - (math.sqrt(x**2 + y**2) * cos_cache[i])), collision_mask.get_size()[0] - 1)),
-                max(0, min(int(end[1] - (math.sqrt(x**2 + y**2) * sin_cache[i])), collision_mask.get_size()[1] - 1))
+                max(0, min(int(end[0] - ((math.sqrt(x**2 + y**2)+10) * cos_cache[i])), collision_mask.get_size()[0] - 1)),
+                max(0, min(int(end[1] - ((math.sqrt(x**2 + y**2)+10) * sin_cache[i])), collision_mask.get_size()[1] - 1))
             )
             self.mouse_startpoints.append(start)
 
@@ -125,18 +126,18 @@ class Pawn:
             if(dx > dy):
                 for j in range(int(start[0]), int(end[0]), 1 if end[0] > start[0] else -1):
                     if (collision_mask.get_at((j, int(m*j+q))) == 1):
-                        self.mouse_endpoints.append([j, int(m*j+q)])
+                        self.mouse_endpoints.append([j, int(m*j+q)]+offset)
                         interrupt = True
                         break
             else:  
                 for j in range(int(start[1]), int(end[1]), 1 if end[1] > start[1] else -1):
                     if (collision_mask.get_at((int((j-q)/m), j)) == 1):
-                        self.mouse_endpoints.append([int((j-q)/m), j])
+                        self.mouse_endpoints.append([int((j-q)/m), j]+offset)
                         interrupt = True
                         break
 
             if (not(interrupt)):
-                self.mouse_endpoints.append([end[0], end[1]])
+                self.mouse_endpoints.append([end[0], end[1]]+offset)
 
         i = 0
         while (i < len(self.mouse_endpoints)):
@@ -174,10 +175,10 @@ class Pawn:
             if (dist < min_dist):
                 self.min_dist_index = i
 
-        if (self.moving and len(self.mouse_endpoints) > 0):
+        if (self.moving and len(self.mouse_endpoints) > 0 and not (collision_mask.get_at(pygame.Vector2 (self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0],self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1]) + (self.position - mouse_coords)*(1/(math.sqrt((self.position[0] - mouse_coords[0])**2+(self.position[1] - mouse_coords[1])**2)) if (self.position - mouse_coords != (0,0)) else 1)*self.texture.get_width()//4))):
             self.position = pygame.Vector2 (
-                self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0], 
-                self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1] + self.texture.get_height()//2
+                self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0],
+                self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1]
             )
 
         # ho fatto questa modifica al check di line of sight, scala male con la grandezza del dungeon ma è fatta apposta per fixare il problema del movimento

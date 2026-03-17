@@ -151,15 +151,15 @@ class Game:
                 for stairs in self.stairs:
                     buffer.blit(source=stairs.masks["main_mask"].to_surface(setcolor=(255, 128, 0), unsetcolor=None), dest=stairs.coord)
 
-                pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
+                # pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
                 
-                versore_perpendicolare = pygame.Vector2(1,1)
-                if (math.sqrt((self.mouse_coords[0]-self.party.position[0])**2+(self.mouse_coords[1]-self.party.position[1])**2)) != 0:
-                    versore_perpendicolare = pygame.Vector2(-(self.mouse_coords[1]-self.party.position[1]), (self.mouse_coords[0]-self.party.position[0]))*(1/(math.sqrt((self.mouse_coords[0]-self.party.position[0])**2+(self.mouse_coords[1]-self.party.position[1])**2)))
-                semibase = 4
-                for i in range(semibase):
-                    pygame.draw.line(buffer, (0, 255, 0, 255), self.party.position + versore_perpendicolare * i, self.mouse_coords + versore_perpendicolare * i)
-                    pygame.draw.line(buffer, (0, 255, 0, 255), self.party.position - versore_perpendicolare * i, self.mouse_coords - versore_perpendicolare * i)
+                # versore_perpendicolare = pygame.Vector2(1,1)
+                # if (math.sqrt((self.mouse_coords[0]-self.party.position[0])**2+(self.mouse_coords[1]-self.party.position[1])**2)) != 0:
+                #     versore_perpendicolare = pygame.Vector2(-(self.mouse_coords[1]-self.party.position[1]), (self.mouse_coords[0]-self.party.position[0]))*(1/(math.sqrt((self.mouse_coords[0]-self.party.position[0])**2+(self.mouse_coords[1]-self.party.position[1])**2)))
+                # semibase = 4
+                # for i in range(semibase):
+                #     pygame.draw.line(buffer, (0, 255, 0, 255), self.party.position + versore_perpendicolare * i, self.mouse_coords + versore_perpendicolare * i)
+                #     pygame.draw.line(buffer, (0, 255, 0, 255), self.party.position - versore_perpendicolare * i, self.mouse_coords - versore_perpendicolare * i)
                 
                 pygame.draw.circle(buffer, (0, 255, 0), self.mouse_coords, 1, 1)
 
