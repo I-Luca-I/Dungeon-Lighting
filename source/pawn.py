@@ -95,7 +95,6 @@ class Pawn:
     def move(self, event:pygame.event.Event, mouse_coords:pygame.Vector2, collision_mask:pygame.Mask) -> None:
         x = (mouse_coords[0] - self.position[0] + self.texture.get_width()//2)
         y = (mouse_coords[1] - self.position[1] + self.texture.get_height()//2)
-        offset = (self.position - mouse_coords)*(1/(math.sqrt((self.position[0] - mouse_coords[0])**2+(self.position[1] - mouse_coords[1])**2)) if (self.position - mouse_coords != (0,0)) else 1)*self.texture.get_width()//8
         
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 0 <= x < self.texture.get_size()[0] and  0 <= y < self.texture.get_size()[1]):
             self.moving = True
@@ -126,18 +125,18 @@ class Pawn:
             if(dx > dy):
                 for j in range(int(start[0]), int(end[0]), 1 if end[0] > start[0] else -1):
                     if (collision_mask.get_at((j, int(m*j+q))) == 1):
-                        self.mouse_endpoints.append([j, int(m*j+q)]+offset)
+                        self.mouse_endpoints.append([j-1, int(m*(j-1)+q)])
                         interrupt = True
                         break
             else:  
                 for j in range(int(start[1]), int(end[1]), 1 if end[1] > start[1] else -1):
                     if (collision_mask.get_at((int((j-q)/m), j)) == 1):
-                        self.mouse_endpoints.append([int((j-q)/m), j]+offset)
+                        self.mouse_endpoints.append([int(((j-1)-q)/m), j-1])
                         interrupt = True
                         break
 
             if (not(interrupt)):
-                self.mouse_endpoints.append([end[0], end[1]]+offset)
+                self.mouse_endpoints.append([end[0], end[1]])
 
         i = 0
         while (i < len(self.mouse_endpoints)):
@@ -150,15 +149,17 @@ class Pawn:
             dy = abs(start[1]-end[1])
 
             interrupt = False
-            
+            self.interrupt_points = []
             if(dx > dy):
                 for j in range(int(start[0]), int(end[0]), 1 if end[0] > start[0] else -1):
                     if (collision_mask.get_at((j, int(m*j+q))) == 1):
+                        self.interrupt_points.append((j, int(m*j+q)))
                         interrupt = True
                         break
             else:  
                 for j in range(int(start[1]), int(end[1]), 1 if end[1] > start[1] else -1):
                     if (collision_mask.get_at((int((j-q)/m), j)) == 1):
+                        self.interrupt_points.append((int((j-q)/m), j))
                         interrupt = True
                         break
             
@@ -175,11 +176,37 @@ class Pawn:
             if (dist < min_dist):
                 self.min_dist_index = i
 
-        if (self.moving and len(self.mouse_endpoints) > 0 and not (collision_mask.get_at(pygame.Vector2 (self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0],self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1]) + (self.position - mouse_coords)*(1/(math.sqrt((self.position[0] - mouse_coords[0])**2+(self.position[1] - mouse_coords[1])**2)) if (self.position - mouse_coords != (0,0)) else 1)*self.texture.get_width()//4))):
+        self.offset = pygame.Vector2(0,0)
+        if (self.moving and len(self.mouse_endpoints) > 0):
             self.position = pygame.Vector2 (
                 self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0],
                 self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1]
             )
+
+            overlap_mask_ = self.hitbox.overlap_mask(
+                collision_mask,
+                -(self.position - (self.texture.get_width()//2, self.texture.get_height()//2))
+            )
+
+            overlap_point = [0,0]
+            k = 0
+            for i  in range(overlap_mask_.get_size()[0]): 
+                for j in range(overlap_mask_.get_size()[1]): #type: ignore
+                    if overlap_mask_.get_at((i,j)):
+                        k += 1
+                        overlap_point[0] += i
+                        overlap_point[1] += j
+            if k > 0:
+                overlap_point = (overlap_point[0]//k, overlap_point[1]//k)
+            
+            overlap_point += self.position - (self.texture.get_width()//2, self.texture.get_height()//2)
+
+            self.offset = (self.position - overlap_point)
+            if k == 0:
+                self.offset = pygame.Vector2(0, 0)
+            
+            self.position += self.offset * 1.5
+
 
         # ho fatto questa modifica al check di line of sight, scala male con la grandezza del dungeon ma è fatta apposta per fixare il problema del movimento
         # che si presentava con i muri da pochi pixel, quindi una volta fatti i chunk offre la possibilità di usare mappe di risoluzione bassa come Labyrinth_2
@@ -224,11 +251,16 @@ class Pawn:
             
             if (len(self.mouse_endpoints) > 0):
                 pygame.draw.circle(buffer, (0, 0, 255), self.mouse_endpoints[self.min_dist_index], 2)
-        
+
+            for i in range(len(self.interrupt_points)):
+                pygame.draw.circle(buffer, (0, 255, 255), self.interrupt_points[i], 2)
+
         buffer.blit(
             self.texture,
             (self.position[0] - self.texture.get_width()//2, self.position[1] - self.texture.get_height()//2)
         )
+
+        pygame.draw.line(buffer, (0, 0, 255), self.position, self.position - self.offset, 2)
 
         if (debug_mode):
             ### Center
