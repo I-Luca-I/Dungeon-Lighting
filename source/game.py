@@ -176,15 +176,15 @@ class Game:
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
 
-            print(f"Times: {timer.mid_printable}")
-            print("\033[1A", end="")
+            # print(f"Times: {timer.mid_printable}")
+            # print("\033[1A", end="")
 
-            if (self.debug_mode):
-                print(f"FPS: {self.clock.get_fps()}")
-                print(f"Mouse coords: {self.mouse_coords}")
-                print(f"Party position: {self.party.position}")
-                print(f"Camera offset: {self.camera_offset}")
-                print("\033[4A", end="")
+            # if (self.debug_mode):
+            #     print(f"FPS: {self.clock.get_fps()}")
+            #     print(f"Mouse coords: {self.mouse_coords}")
+            #     print(f"Party position: {self.party.position}")
+            #     print(f"Camera offset: {self.camera_offset}")
+            #     print("\033[4A", end="")
 
         self.quit()
         return self.new_game_data
