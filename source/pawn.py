@@ -88,7 +88,7 @@ class Pawn:
     def move(self, event:pygame.event.Event, mouse_coords:pygame.Vector2, collision_mask:pygame.Mask) -> None:
         x = (mouse_coords[0] - self.position[0] + self.texture.get_width()//2)
         y = (mouse_coords[1] - self.position[1] + self.texture.get_height()//2)
-        
+
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 0 <= x < self.texture.get_size()[0] and  0 <= y < self.texture.get_size()[1]):
             self.moving = True
             self.mouse_offset = self.position - mouse_coords
@@ -174,9 +174,14 @@ class Pawn:
                 self.min_dist_index = i
 
         if (self.moving and len(self.mouse_endpoints) > 0):
+            # self.position = pygame.Vector2 (
+            #     self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0],
+            #     self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1]
+            # )
+            # Opzione nucleare (went for it)
             self.position = pygame.Vector2 (
-                self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0],
-                self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1]
+                self.mouse_endpoints[self.min_dist_index][0],
+                self.mouse_endpoints[self.min_dist_index][1]
             )
 
         coeff = 0.8
@@ -185,7 +190,6 @@ class Pawn:
             cicli += 1
             if cicli > 20: 
                 self.position = self.prev_position
-                print("palle")
                 break
             
             self.offset = pygame.Vector2(0,0)
@@ -195,7 +199,6 @@ class Pawn:
             )
 
             self.overlap_vector = [0,0]
-            mid = [0,0]
             k = 0
             for i in range(self.overlap_mask.get_size()[0]): 
                 for j in range(self.overlap_mask.get_size()[1]):
@@ -205,18 +208,16 @@ class Pawn:
                         self.overlap_vector[1] += j
             if k > 0:
                 self.overlap_vector = (self.overlap_vector[0]//k, self.overlap_vector[1]//k)
-                mid = self.overlap_vector
             
             self.overlap_vector += self.position - pygame.Vector2(self.texture.get_width()//2, self.texture.get_height()//2)
 
             self.offset = (self.position - self.overlap_vector) if k != 0 else pygame.Vector2(0, 0)
             self.position += self.offset * coeff
             self.position = pygame.Vector2(max(0, min(self.position[0], collision_mask.get_size()[0]-1)), max(0, min(self.position[1], collision_mask.get_size()[1]-1)))
-            print(self.offset)
 
             if (k == 0):
                 break
-
+        
         self.prev_position = self.position
 
     def draw(self, buffer:pygame.Surface, debug_mode:bool) -> None:
@@ -238,12 +239,11 @@ class Pawn:
             for i in range(len(self.interrupt_points)):
                 # pygame.draw.line(buffer, (0, 255, 255), self.start_interrupt_points[i], self.interrupt_points[i], 2)
                 pygame.draw.circle(buffer, (0, 255, 255), self.interrupt_points[i], 1)
-
+            
         buffer.blit(
             self.texture,
             (self.position[0] - self.texture.get_width()//2, self.position[1] - self.texture.get_height()//2)
         )
-
 
         if (debug_mode):
             ### Center
