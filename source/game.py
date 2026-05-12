@@ -9,6 +9,7 @@ class Game:
 
         ### Load local data
         dungeon_img = pygame.image.load(f"saves/dungeon_{self.id}/dungeon_{self.id}.png")
+        light_physics_collisions_img = pygame.image.load(f"saves/dungeon_{self.id}/collisions_{self.id}.png")
         triggerables_img = pygame.image.load(f"saves/dungeon_{self.id}/triggerables_{self.id}.png")
         try:
             shadow_mask_img = pygame.image.load(f"saves/dungeon_{self.id}/{self.save}_light_mask.png")
@@ -76,12 +77,15 @@ class Game:
         ### Surfaces
         self.dungeon = pygame.surface.Surface(size=(dungeon_img.get_width(), dungeon_img.get_height()))
         self.dungeon.blit(dungeon_img, (0, 0))
+        self.collisions_surface = light_physics_collisions_img
         self.triggerables_surface = triggerables_img
         self.frame = pygame.surface.Surface(size=(frame_img.get_width(), frame_img.get_height()), flags=pygame.SRCALPHA)
         self.frame.blit(pygame.transform.rotozoom(frame_img, 0, info.current_w/frame_img.get_width()), (0, 0))
 
         ### Masks
-        self.collision_mask = mask.Masks.get_collision_mask(self.dungeon, pygame.Color(0, 0, 35))
+        self.collision_mask = mask.Masks.get_collision_mask(self.collisions_surface, pygame.Color(0, 0, 35))
+        self.physics_collision_mask = triggerables.Triggerable.get_big_mask(self.collisions_surface, (0, 0, 255))
+        self.physics_collision_mask.draw(self.collision_mask, (0,0))
         shadow_surface = pygame.surface.Surface(size=self.dungeon.get_size())
         shadow_surface.blit(shadow_mask_img, (0, 0))
         self.shadow_mask = pygame.mask.from_threshold(surface=shadow_surface, color=(255, 255, 255), threshold=(1, 1, 1))
@@ -118,7 +122,7 @@ class Game:
             buffer.blit(source=self.dungeon, dest=(0, 0))
 
             if (self.debug_mode):
-                buffer.blit(source=self.collision_mask.to_surface(setcolor=(0, 255, 0), unsetcolor=(255, 255, 255)), dest=(0, 0))
+                buffer.blit(source=self.physics_collision_mask.to_surface(setcolor=(0, 255, 0), unsetcolor=(255, 255, 255)), dest=(0, 0))
             timer.add_breakpoint("pre_updates")
 
             self.party.update(self.collision_mask)
@@ -176,8 +180,8 @@ class Game:
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
 
-            # print(f"Times: {timer.mid_printable}")
-            # print("\033[1A", end="")
+            print(f"Times: {timer.mid_printable}")
+            print("\033[1A", end="")
 
             # if (self.debug_mode):
             #     print(f"FPS: {self.clock.get_fps()}")
@@ -191,7 +195,7 @@ class Game:
 
     def event_loop(self) -> None:
         for event in pygame.event.get():
-            self.party.handle_events(event, self.mouse_coords, self.collision_mask)
+            self.party.handle_events(event, self.mouse_coords, self.physics_collision_mask)
 
             ### Quit
             if event.type == pygame.QUIT:
@@ -231,7 +235,7 @@ class Game:
                 pygame.mouse.set_cursor(cursor)
                 ### door trigger
                 if pygame.mouse.get_pressed()[0]:
-                    closest_door.trigger(self.collision_mask)
+                    closest_door.trigger(self.collision_mask, self.physics_collision_mask)
 
             ### Stairs interaction
             if triggerables.Stairs.check_click(self.stairs_mask, self.shadow_mask, self.mouse_coords) and triggerables.Stairs.check_click(self.stairs_mask, self.shadow_mask, self.party.position) and not self.party.moving:
