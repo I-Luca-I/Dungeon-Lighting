@@ -8,9 +8,12 @@ def main():
     if not(data["load_dungeon"]):
         return
 
+    time = 0  # placeholders
+    turns = 0
+    num_executed_turns = 0
     while data != None:
         pygame.init()
-        game = Game(id=data["id"], save=data["save"], entrance=data["entrance"])
-        data = game.run()
+        game = Game(id=data["id"], save=data["save"], entrance=data["entrance"], turns=turns, time=time, num_executed_turns=num_executed_turns)
+        data, turns, time, num_executed_turns = game.run()
 
 main()
