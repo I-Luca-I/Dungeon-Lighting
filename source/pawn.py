@@ -220,7 +220,7 @@ class Pawn:
         
         self.prev_position = self.position
 
-    def draw(self, buffer:pygame.Surface, debug_mode:bool) -> None:
+    def draw(self, buffer:pygame.Surface, debug_mode:bool, relative_position_of_what_im_drawing_on:pygame.Vector2) -> None:
         if (debug_mode):
             ### Rays
             for i in range(len(self.endpoints)):
@@ -242,7 +242,7 @@ class Pawn:
             
         buffer.blit(
             self.texture,
-            (self.position[0] - self.texture.get_width()//2, self.position[1] - self.texture.get_height()//2)
+            (self.position[0] - self.texture.get_width()//2, self.position[1] - self.texture.get_height()//2) - relative_position_of_what_im_drawing_on
         )
 
         if (debug_mode):

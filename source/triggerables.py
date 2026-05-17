@@ -1,4 +1,4 @@
-import pygame, json, os
+import pygame, os
 
 existing_triggerables = []
 
@@ -124,9 +124,11 @@ class Door(Triggerable):
     def trigger(self, collision_mask:pygame.Mask, physics_collision_mask:pygame.Mask) -> None:
         if not(self.states["is_open"]):
             self.states["is_open"] = True
+
             self.masks["collision_mask_backup"] = pygame.mask.Mask(size=self.masks["main_mask"].get_size(), fill=False)
             self.masks["collision_mask_backup"].draw(collision_mask, (-self.coord[0], -self.coord[1]))
             collision_mask.erase(self.masks["main_mask"], self.coord)
+
             self.masks["physics_collision_mask_backup"] = pygame.mask.Mask(size=self.masks["main_mask"].get_size(), fill=False)
             self.masks["physics_collision_mask_backup"].draw(physics_collision_mask, (-self.coord[0], -self.coord[1]))
             physics_collision_mask.erase(self.masks["main_mask"], self.coord)

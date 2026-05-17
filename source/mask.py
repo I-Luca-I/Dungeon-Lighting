@@ -32,7 +32,7 @@ class Masks:
         light_mask.draw(pygame.mask.from_surface(buffer), (0, 0))
 
     @staticmethod
-    def draw_light(buffer:pygame.surface.Surface, shadow_mask:pygame.Mask, light_mask:pygame.Mask, pawn:pawn.Pawn, chase_mode:bool) -> None:
+    def draw_light(buffer:pygame.surface.Surface, shadow_mask:pygame.Mask, light_mask:pygame.Mask, pawn:pawn.Pawn) -> None:
         # shadow_overlay = pygame.surface.Surface(buffer.get_size(), pygame.SRCALPHA)
         # pygame.draw.rect(shadow_overlay, (0, 0, 0, 100), (0, 0, shadow_overlay.get_width(), shadow_overlay.get_height()))
         # pygame.draw.polygon(shadow_overlay, (255, 255, 255, 0), pawn.endpoints)
@@ -44,24 +44,22 @@ class Masks:
         # shadow_overlay.blit(source=light_mask.to_surface(setcolor=(255, 255, 255), unsetcolor=None), dest=buffer_dest)
         # buffer.blit(source=shadow_mask.to_surface(surface=shadow_overlay, setsurface=shadow_overlay, unsetcolor=(0, 0, 0)), dest=(0, 0))
 
-        if not(chase_mode):
-            shadow_mask.erase(light_mask, buffer_dest)
-            shadow_surf = shadow_mask.to_surface(setcolor=(0, 0, 0, 125), unsetcolor=None)
-            shadow_mask.draw(light_mask, buffer_dest)
-            shadow_surf.blit(source=light_mask.to_surface(setcolor=(255, 255, 255, 0), unsetcolor=None), dest=buffer_dest)
-            buffer.blit(source=shadow_mask.to_surface(setsurface=shadow_surf, unsetcolor=(0, 0, 0)), dest=(0, 0))
-        else:
-            old_shadow_mask = shadow_mask
-            shadow_mask.erase(light_mask, buffer_dest)
-            shadow_surf = shadow_mask.to_surface(setcolor=(0, 0, 0, 125), unsetcolor=None)
-            shadow_mask.draw(light_mask, buffer_dest)
-            shadow_surf.blit(source=light_mask.to_surface(setcolor=(255, 255, 255, 0), unsetcolor=None), dest=buffer_dest)
-            shadow_mask = old_shadow_mask.copy()
-            
-            buffer.blit(source=old_shadow_mask.to_surface(setsurface=shadow_surf, unsetcolor=(0, 0, 0)), dest=(0, 0))
+        shadow_mask.erase(light_mask, buffer_dest)
+        shadow_surf = shadow_mask.to_surface(setcolor=(0, 0, 0, 125), unsetcolor=None)
+        shadow_mask.draw(light_mask, buffer_dest)
+        # shadow_surf.blit(source=light_mask.to_surface(setcolor=(255, 255, 255, 0), unsetcolor=None), dest=buffer_dest)
+        buffer.blit(source=shadow_mask.to_surface(setsurface=shadow_surf, unsetcolor=(0, 0, 0)), dest=(0, 0))
 
 
         # buffer.blit(source=shadow_mask.to_surface(setcolor=(0, 0, 0, 100), unsetcolor=None), dest=(0, 0))
         # buffer.blit(source=light_mask.to_surface(setcolor=(255, 255, 255, 0), unsetcolor=None), dest=buffer_dest)
         # shadow_mask.draw(light_mask, buffer_dest)
         # buffer.blit(source=shadow_mask.to_surface(setcolor=None, unsetcolor=(0, 0, 0)), dest=(0, 0))
+
+    @staticmethod
+    def draw_light_re(buffer:pygame.surface.Surface, shadow_mask:pygame.Mask, light_mask:pygame.Mask, pawn:pawn.Pawn, camera_view_coord:pygame.Vector2):
+        top_right_of_light_mask_position = pawn.position - camera_view_coord - pygame.Vector2([pawn.radius, pawn.radius])
+        shadow_mask.erase(light_mask, top_right_of_light_mask_position)
+        shadow_surf = shadow_mask.to_surface(setcolor=(0, 0, 0, 125), unsetcolor=None)
+        shadow_mask.draw(light_mask, top_right_of_light_mask_position)
+        buffer.blit(source=shadow_mask.to_surface(setsurface=shadow_surf, unsetcolor=(0, 0, 0)), dest=(0, 0))

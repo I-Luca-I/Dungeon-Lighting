@@ -1,11 +1,16 @@
 import pygame, json, os, datetime, math
-from . import pawn, mask, triggerables, time
+from . import pawn, mask, triggerables, time, zone
 
 class Game:
-    def __init__(self, id:str, save:str, entrance:str) -> None:
+    def __init__(self, id:str, save:str, entrance:str, turns:int, time:int, num_executed_turns:int) -> None:
         self.id = id
         self.save = save
         self.entrance = entrance
+
+        self.turns = turns
+        self.time = time
+        self.num_executed_turns = num_executed_turns
+        self.current_zone = None
 
         ### Load local data
         dungeon_img = pygame.image.load(f"saves/dungeon_{self.id}/dungeon_{self.id}.png")
@@ -31,7 +36,7 @@ class Game:
         ### Pygame setup
         info = pygame.display.Info()
         pygame.display.set_mode(
-            size=(info.current_w, info.current_h)
+            size=(1000, 700)     #(info.current_w, info.current_h)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -39,6 +44,9 @@ class Game:
         self.chase_mode = bool(self.settings["chase_mode"])
         self.dm_mode = False
         self.stairs_destinations = self.settings["stairs_destinations"]
+        self.number_of_zones = self.settings["number_of_zones"]
+        self.zones_encounter_freq = self.settings["zones_encounter_frequencies"]
+        self.consumati_per_zona = self.settings["consumati_per_zona"]
         pygame.display.set_caption("Dungeon//Lighting")
         pygame.display.set_icon(icon)
 
@@ -64,7 +72,7 @@ class Game:
         ### DM mode setup
         self.add_light_in_mouse_pos = False
         ### keyboard repeat inputs
-        pygame.key.set_repeat(10, 10)
+        # pygame.key.set_repeat(10, 10)
 
         ### Camera
         self.zoom_exponent = int(self.settings["zoom_exponent"])
@@ -91,6 +99,7 @@ class Game:
         self.shadow_mask = pygame.mask.from_threshold(surface=shadow_surface, color=(255, 255, 255), threshold=(1, 1, 1))
         self.light_mask = pygame.mask.Mask(size=(self.party.radius*2, self.party.radius*2), fill=False)
 
+        ### Triggerables and other game objects
         self.door_mask = triggerables.Door.get_door_mask(self.triggerables_surface)
         self.doors = triggerables.Door.get_doors(self.door_mask)
 
@@ -99,8 +108,10 @@ class Game:
 
         self.dungeon_changers_mask = triggerables.DungeonChanger.get_changers_mask(self.triggerables_surface)
         self.dungeon_changers = triggerables.DungeonChanger.get_dungeon_changers(self.dungeon_changers_mask, self.settings["dungeon_changers_data"])
+
+        self.zones = zone.Zone.get_zones(self.number_of_zones, self.zones_encounter_freq, self.consumati_per_zona, self.turns, self.time, self.num_executed_turns, self.id)
     
-    def run(self) -> None:
+    def run(self) -> tuple:
         self.new_game_data = None
         timer = time.timer()
         while self.running:
@@ -121,6 +132,13 @@ class Game:
             buffer = pygame.surface.Surface(size=(self.dungeon.get_width(), self.dungeon.get_height()), flags=pygame.SRCALPHA)
             buffer.blit(source=self.dungeon, dest=(0, 0))
 
+            # Creation of camera view
+            self.camera_view = pygame.Surface(
+                size=(pygame.Vector2(pygame.display.get_window_size())) * (1 / self.zoom_factor))
+            self.camera_view.blit(source=buffer, dest=((self.camera_offset) / self.zoom_factor))
+            self.camera_view_shadow_mask = pygame.Mask(size=(pygame.Vector2(pygame.display.get_window_size())) * (1 / self.zoom_factor), fill=False)
+            self.camera_view_shadow_mask.draw(self.shadow_mask, offset=((self.camera_offset) / self.zoom_factor))
+
             if (self.debug_mode):
                 buffer.blit(source=self.physics_collision_mask.to_surface(setcolor=(0, 255, 0), unsetcolor=(255, 255, 255)), dest=(0, 0))
             timer.add_breakpoint("pre_updates")
@@ -131,29 +149,35 @@ class Game:
             mask.Masks.update_light(self.light_mask, self.party)
             timer.add_breakpoint("light_upd")
 
-            mask.Masks.draw_light(buffer, self.shadow_mask, self.light_mask, self.party, self.chase_mode)
+            posizione_di_camera_view = -((self.camera_offset) / self.zoom_factor)
+            mask.Masks.draw_light_re(self.camera_view, self.camera_view_shadow_mask, self.light_mask, self.party, posizione_di_camera_view)
+            if not self.chase_mode:
+                self.shadow_mask.draw(self.camera_view_shadow_mask, offset=posizione_di_camera_view)
+            # mask.Masks.draw_light(buffer, self.shadow_mask, self.light_mask, self.party)
             timer.add_breakpoint("light_drw")
 
-            self.party.draw(buffer, self.debug_mode)
+            #self.party.draw(buffer, self.debug_mode) ## da cambiare se si va per camera view
+            self.party.draw(self.camera_view, self.debug_mode, posizione_di_camera_view)  # TODO: modificare appropriatamente le sezioni in debug mode con le coordinate nuove
             timer.add_breakpoint("party_drw")
 
             if (self.add_light_in_mouse_pos):
                 self.add_light_in_mouse_pos = False
                 instant_light = pawn.Pawn(position=pygame.Vector2(pygame.mouse.get_pos())//self.zoom_factor - self.camera_offset//self.zoom_factor, radius=30, img=pygame.Surface(size=(1,1)), size=1)
                 instant_light.update(self.collision_mask)
-                instant_light.draw(buffer, self.debug_mode)
+                instant_light.draw(self.camera_view, self.debug_mode, posizione_di_camera_view)
                 instant_light_mask = pygame.mask.Mask(size=(instant_light.radius*2, instant_light.radius*2), fill=False)
                 mask.Masks.update_light(instant_light_mask, instant_light)
-                mask.Masks.draw_light(buffer, self.shadow_mask, instant_light_mask, instant_light, self.chase_mode)
+                mask.Masks.draw_light_re(self.camera_view, self.camera_view_shadow_mask, instant_light_mask, instant_light, posizione_di_camera_view)
+                self.shadow_mask.draw(self.camera_view_shadow_mask, offset=posizione_di_camera_view)  # TODO: capire perchè non funziona anche se già modificato
 
             if (self.debug_mode):
                 for door in self.doors:
                     if door.states["is_open"]:
-                        buffer.blit(source=door.masks["main_mask"].to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=door.coord)
+                        self.camera_view.blit(source=door.masks["main_mask"].to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=(door.coord - posizione_di_camera_view))
                     else:
-                        buffer.blit(source=door.masks["main_mask"].to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=door.coord)
+                        self.camera_view.blit(source=door.masks["main_mask"].to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=(door.coord - posizione_di_camera_view))
                 for stairs in self.stairs:
-                    buffer.blit(source=stairs.masks["main_mask"].to_surface(setcolor=(255, 128, 0), unsetcolor=None), dest=stairs.coord)
+                    self.camera_view.blit(source=stairs.masks["main_mask"].to_surface(setcolor=(255, 128, 0), unsetcolor=None), dest=(stairs.coord - posizione_di_camera_view))
 
                 # pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
                 
@@ -165,12 +189,10 @@ class Game:
                 #     pygame.draw.line(buffer, (0, 255, 0, 255), self.party.position + versore_perpendicolare * i, self.mouse_coords + versore_perpendicolare * i)
                 #     pygame.draw.line(buffer, (0, 255, 0, 255), self.party.position - versore_perpendicolare * i, self.mouse_coords - versore_perpendicolare * i)
                 
-                pygame.draw.circle(buffer, (0, 255, 0), self.mouse_coords, 1, 1)
+                pygame.draw.circle(self.camera_view, (0, 255, 0), (self.mouse_coords - posizione_di_camera_view), 1, 1)
 
             ### Print buffer and frame on screen
             screen = pygame.display.get_surface()
-            self.camera_view = pygame.Surface(size=(pygame.Vector2(pygame.display.get_window_size())) * (1 / self.zoom_factor))
-            self.camera_view.blit(source=buffer, dest=((self.camera_offset)/self.zoom_factor))
             screen.blit(
                source=pygame.transform.scale_by(surface=self.camera_view, factor=self.zoom_factor),    #pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
                dest=(0, 0)                                                                             #self.camera_offset
@@ -191,7 +213,7 @@ class Game:
             #     print("\033[4A", end="")
 
         self.quit()
-        return self.new_game_data
+        return (self.new_game_data, self.current_zone.turns, self.current_zone.time, self.current_zone.num_executed_turns)
 
     def event_loop(self) -> None:
         for event in pygame.event.get():
@@ -280,6 +302,7 @@ class Game:
                 ### Manual save
                 if event.key == pygame.K_s:
                     self.save_dungeon(self.id)
+                    print("saved!:)")
                 
                 ### Debug mode
                 if event.key == pygame.K_F4:
@@ -288,6 +311,10 @@ class Game:
                 ### Chase mode
                 if event.key == pygame.K_c:
                     self.chase_mode = not self.chase_mode
+
+                ### Turn change
+                if event.key == pygame.K_SPACE:
+                    self.current_zone.turn_change()
 
                 ### DM mode
 
@@ -311,12 +338,27 @@ class Game:
                 self.zoom_factor = 1.1 ** self.zoom_exponent
                 self.move_camera(self.party.position)
                 self.party.moving = False
+
+            ### Current zone handling
+            self.previous_zone = self.current_zone
+            for zone in self.zones:
+                if zone.mask.get_at(self.party.position):
+                    self.current_zone = zone
+            if self.previous_zone != self.current_zone and (self.previous_zone != None):
+                self.current_zone.time = self.previous_zone.time
+                self.current_zone.turns = self.previous_zone.turns
+                self.current_zone.num_executed_turns = self.previous_zone.num_executed_turns
                                
     def move_camera(self, coords:pygame.Vector2) -> None:
         self.camera_offset[0] = pygame.display.get_surface().get_width()//2 - coords[0]*self.zoom_factor
         self.camera_offset[1] = pygame.display.get_surface().get_height()//2 - coords[1]*self.zoom_factor
 
     def save_dungeon(self, id:str) -> None:
+        consumati_per_zona = []
+        for j in range(len(self.zones)):
+            consumati_per_zona.append([])
+            for i in range(len(self.zones[j].rimanenti)):
+                consumati_per_zona[j].append(self.zones[j].totali[i] - self.zones[j].rimanenti[i])
         settings = {
             "zoom_exponent": self.zoom_exponent,
             "party_size": self.settings["party_size"],
@@ -327,8 +369,12 @@ class Game:
             "chase_mode": self.chase_mode,
             "stairs_destinations": self.stairs_destinations,
             "entrances":self.settings["entrances"],
-            "dungeon_changers_data":self.settings["dungeon_changers_data"]
+            "dungeon_changers_data":self.settings["dungeon_changers_data"],
+            "number_of_zones":self.settings["number_of_zones"],
+            "zones_encounter_frequencies":self.settings["zones_encounter_frequencies"],
+            "consumati_per_zona":consumati_per_zona
         }
+
 
         os.makedirs(f"saves/dungeon_{id}", exist_ok=True)
         date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
