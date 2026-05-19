@@ -36,7 +36,7 @@ class Game:
         ### Pygame setup
         info = pygame.display.Info()
         pygame.display.set_mode(
-            size=(1000, 700)     #(info.current_w, info.current_h)
+            (info.current_w, info.current_h)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -129,18 +129,19 @@ class Game:
             self.camera_offset[0] = min(0, max(self.camera_offset[0], pygame.display.get_surface().get_width()-self.dungeon.get_width()*self.zoom_factor))
             self.camera_offset[1] = min(0, max(self.camera_offset[1], pygame.display.get_surface().get_height()-self.dungeon.get_height()*self.zoom_factor))
 
-            buffer = pygame.surface.Surface(size=(self.dungeon.get_width(), self.dungeon.get_height()), flags=pygame.SRCALPHA)
-            buffer.blit(source=self.dungeon, dest=(0, 0))
+            #buffer = pygame.surface.Surface(size=(self.dungeon.get_width(), self.dungeon.get_height()), flags=pygame.SRCALPHA)
+            #buffer.blit(source=self.dungeon, dest=(0, 0))
 
             # Creation of camera view
             self.camera_view = pygame.Surface(
                 size=(pygame.Vector2(pygame.display.get_window_size())) * (1 / self.zoom_factor))
-            self.camera_view.blit(source=buffer, dest=((self.camera_offset) / self.zoom_factor))
+            self.camera_view.blit(source=self.dungeon, dest=((self.camera_offset) / self.zoom_factor))
             self.camera_view_shadow_mask = pygame.Mask(size=(pygame.Vector2(pygame.display.get_window_size())) * (1 / self.zoom_factor), fill=False)
             self.camera_view_shadow_mask.draw(self.shadow_mask, offset=((self.camera_offset) / self.zoom_factor))
 
             if (self.debug_mode):
-                buffer.blit(source=self.physics_collision_mask.to_surface(setcolor=(0, 255, 0), unsetcolor=(255, 255, 255)), dest=(0, 0))
+                self.camera_view.blit(source=self.physics_collision_mask.to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=((self.camera_offset) / self.zoom_factor))
+                self.camera_view.blit(source=self.collision_mask.to_surface(setcolor=(0, 255, 0), unsetcolor=None), dest=((self.camera_offset) / self.zoom_factor))
             timer.add_breakpoint("pre_updates")
 
             self.party.update(self.collision_mask)
@@ -164,11 +165,11 @@ class Game:
                 self.add_light_in_mouse_pos = False
                 instant_light = pawn.Pawn(position=pygame.Vector2(pygame.mouse.get_pos())//self.zoom_factor - self.camera_offset//self.zoom_factor, radius=30, img=pygame.Surface(size=(1,1)), size=1)
                 instant_light.update(self.collision_mask)
-                instant_light.draw(self.camera_view, self.debug_mode, posizione_di_camera_view)
+                # instant_light.draw(self.camera_view, self.debug_mode, posizione_di_camera_view)
                 instant_light_mask = pygame.mask.Mask(size=(instant_light.radius*2, instant_light.radius*2), fill=False)
                 mask.Masks.update_light(instant_light_mask, instant_light)
                 mask.Masks.draw_light_re(self.camera_view, self.camera_view_shadow_mask, instant_light_mask, instant_light, posizione_di_camera_view)
-                self.shadow_mask.draw(self.camera_view_shadow_mask, offset=posizione_di_camera_view)  # TODO: capire perchè non funziona anche se già modificato
+                self.shadow_mask.draw(self.camera_view_shadow_mask, offset=posizione_di_camera_view)  # TODO: capire perchè non funziona anche se già modificato edit:(ho capito che riguarda self.dm_mode e l'acquisizione degli input da tastiera)
 
             if (self.debug_mode):
                 for door in self.doors:
@@ -203,10 +204,10 @@ class Game:
             timer.add_breakpoint("buffer+frame_drw")
 
             print(f"Times: {timer.mid_printable}")
-            print("\033[1A", end="")
+            #print("\033[1A", end="")
 
             # if (self.debug_mode):
-            #     print(f"FPS: {self.clock.get_fps()}")
+            print(f"FPS: {self.clock.get_fps()}")
             #     print(f"Mouse coords: {self.mouse_coords}")
             #     print(f"Party position: {self.party.position}")
             #     print(f"Camera offset: {self.camera_offset}")
@@ -374,7 +375,6 @@ class Game:
             "zones_encounter_frequencies":self.settings["zones_encounter_frequencies"],
             "consumati_per_zona":consumati_per_zona
         }
-
 
         os.makedirs(f"saves/dungeon_{id}", exist_ok=True)
         date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
