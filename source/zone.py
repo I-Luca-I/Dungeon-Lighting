@@ -1,5 +1,5 @@
 import numpy as np
-import pygame
+import pygame, csv
 import random
 from . import triggerables
 
@@ -9,6 +9,11 @@ class Zone:
         self.mask = mask
         self.turns = turns
         self.time = time
+        # with open(path_to_file, "r") as file:
+        #     self.reader = csv.reader(file)
+        #     self.sheet = []
+        #     for i in self.reader:
+        #         self.sheet.append(str(_) for _ in i)
         self.sheet = np.loadtxt(path_to_file, delimiter=",", dtype=str)
         self.num_executed_turns = num_executed_turns
         self.frequenza_encounters = frequenza_encounters

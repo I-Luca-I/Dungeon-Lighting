@@ -1,4 +1,5 @@
-import pygame, math
+import pygame, math, numpy as np
+import move
 
 sin_cache = []
 cos_cache = []
@@ -86,138 +87,67 @@ class Pawn:
         self.move(event, mouse_coords, collision_mask)
 
     def move(self, event:pygame.event.Event, mouse_coords:pygame.Vector2, collision_mask:pygame.Mask) -> None:
-        x = (mouse_coords[0] - self.position[0] + self.texture.get_width()//2)
-        y = (mouse_coords[1] - self.position[1] + self.texture.get_height()//2)
+        """ PAWN """
+        x = (mouse_coords[0] - self.position[0] + self.texture.get_width() // 2)
+        y = (mouse_coords[1] - self.position[1] + self.texture.get_height() // 2)
 
-        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 0 <= x < self.texture.get_size()[0] and  0 <= y < self.texture.get_size()[1]):
+        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and 0 <= x < self.texture.get_size()[0] and 0 <= y < self.texture.get_size()[1]):
             self.moving = True
-            self.mouse_offset = self.position - mouse_coords
         elif (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
             self.moving = False
+        
+        pawn = np.array([
+            np.array(self.texture.get_size()), # texture
+            np.array(self.position), # position
+            np.array(self.prev_position), # prev_position
+            self.moving, # moving
+            self.max_rays # max_rays
+        ])
 
-        x = (mouse_coords[0] - self.position[0])
-        y = (mouse_coords[1] - self.position[1])
+        """ COLLISION MASK """
+        collision_mask_array = np.array(pygame.surfarray.pixels3d(collision_mask.to_surface()))
 
-        self.mouse_endpoints = []
-        self.mouse_startpoints = []
-        for i in range(0, self.max_rays, self.max_rays//500):
-            end = (max(0, min(mouse_coords[0], collision_mask.get_size()[0] - 1)), (max(0, min(mouse_coords[1], collision_mask.get_size()[1] - 1))))
-            start = (
-                max(0, min(int(end[0] - ((math.sqrt(x**2 + y**2)+0) * cos_cache[i])), collision_mask.get_size()[0] - 1)),
-                max(0, min(int(end[1] - ((math.sqrt(x**2 + y**2)+0) * sin_cache[i])), collision_mask.get_size()[1] - 1))
-            )
-            self.mouse_startpoints.append(start)
+        """ MOVEMENT """
+        move.move(pawn, np.array(mouse_coords), collision_mask_array)
+        
+        # i seguenti attributi di self vengono invece definiti qui all'inerno di move, quindi ricordarsi di ritornarli (non tutti 
+        # sono effettivamente necessari però per adesso questa lista comprende tutto)
 
-            m = float(start[1]-end[1])/float(start[0]-end[0]) if (start[0] != end[0]) else collision_mask.get_size()[1]
-            q = start[1] - m*start[0]
-            dx = abs(start[0]-end[0])
-            dy = abs(start[1]-end[1])
-
-            interrupt = False
-            
-            if(dx > dy):
-                for j in range(int(start[0]), int(end[0]), 1 if end[0] > start[0] else -1):
-                    if (collision_mask.get_at((j, int(m*j+q))) == 1):
-                        prev_j = j - (1 if end[0] > start[0] else -1)
-                        self.mouse_endpoints.append([prev_j, int(m*(prev_j)+q)])
-                        interrupt = True
-                        break
-            else:  
-                for j in range(int(start[1]), int(end[1]), 1 if end[1] > start[1] else -1):
-                    if (collision_mask.get_at((int((j-q)/m), j)) == 1):
-                        prev_j = j - (1 if end[1] > start[1] else -1)
-                        self.mouse_endpoints.append([int(((prev_j)-q)/m), prev_j])
-                        interrupt = True
-                        break
-
-            if (not(interrupt)):
-                self.mouse_endpoints.append([end[0], end[1]])
-
-        i = 0
-        self.interrupt_points = []
-        self.start_interrupt_points = []
-        while (i < len(self.mouse_endpoints)):
-            start = self.position
-            end = self.mouse_endpoints[i]
-
-            m = float(start[1]-end[1])/float(start[0]-end[0]) if (start[0] != end[0]) else collision_mask.get_size()[1]
-            q = start[1] - m*start[0]
-            dx = abs(start[0]-end[0])
-            dy = abs(start[1]-end[1])
-
-            interrupt = False
-            if(dx > dy):
-                for j in range(int(start[0]), int(end[0]), 1 if end[0] > start[0] else -1):
-                    if (collision_mask.get_at((j, int(m*j+q))) == 1):
-                        self.interrupt_points.append((j, int(m*j+q)))
-                        interrupt = True
-                        break
-            else:  
-                for j in range(int(start[1]), int(end[1]), 1 if end[1] > start[1] else -1):
-                    if (collision_mask.get_at((int((j-q)/m), j)) == 1):
-                        self.interrupt_points.append((int((j-q)/m), j))
-                        interrupt = True
-                        break
-            
-            if (interrupt):
-                self.mouse_startpoints.pop(i)
-                self.mouse_endpoints.pop(i)
-                self.start_interrupt_points.append(start)
-            else:
-                i += 1
-
-        self.min_dist_index = 0
-        for i in range(len(self.mouse_endpoints)):
-            dist = abs(mouse_coords[0]-self.mouse_endpoints[i][0]) + abs(mouse_coords[1]-self.mouse_endpoints[i][1])
-            min_dist = abs(mouse_coords[0]-self.mouse_endpoints[self.min_dist_index][0]) + abs(mouse_coords[1]-self.mouse_endpoints[self.min_dist_index][1])
-            if (dist < min_dist):
-                self.min_dist_index = i
-
-        if (self.moving and len(self.mouse_endpoints) > 0):
-            # self.position = pygame.Vector2 (
-            #     self.mouse_endpoints[self.min_dist_index][0] + self.mouse_offset[0],
-            #     self.mouse_endpoints[self.min_dist_index][1] + self.mouse_offset[1]
-            # )
-            # Opzione nucleare (went for it)
-            self.position = pygame.Vector2 (
-                self.mouse_endpoints[self.min_dist_index][0],
-                self.mouse_endpoints[self.min_dist_index][1]
-            )
-
+        """ OFFSET (RIVEDI ALLA FINE) """
         coeff = 0.8
         cicli = 0
         while (True):
             cicli += 1
-            if cicli > 20: 
+            if cicli > 20:
                 self.position = self.prev_position
                 break
-            
-            self.offset = pygame.Vector2(0,0)
+
+            self.offset = pygame.Vector2(0, 0)
             self.overlap_mask = self.hitbox.overlap_mask(
                 collision_mask,
-                -(self.position - pygame.Vector2(self.texture.get_width()//2, self.texture.get_height()//2))
+                -(self.position - pygame.Vector2(self.texture.get_width() // 2, self.texture.get_height() // 2))
             )
 
-            self.overlap_vector = [0,0]
+            self.overlap_vector = [0, 0]
             k = 0
-            for i in range(self.overlap_mask.get_size()[0]): 
+            for i in range(self.overlap_mask.get_size()[0]):
                 for j in range(self.overlap_mask.get_size()[1]):
-                    if self.overlap_mask.get_at((i,j)):
+                    if self.overlap_mask.get_at((i, j)):
                         k += 1
                         self.overlap_vector[0] += i
                         self.overlap_vector[1] += j
             if k > 0:
-                self.overlap_vector = (self.overlap_vector[0]//k, self.overlap_vector[1]//k)
-            
-            self.overlap_vector += self.position - pygame.Vector2(self.texture.get_width()//2, self.texture.get_height()//2)
+                self.overlap_vector = (self.overlap_vector[0] // k, self.overlap_vector[1] // k)
+
+            self.overlap_vector += self.position - pygame.Vector2(self.texture.get_width() // 2, self.texture.get_height() // 2)
 
             self.offset = (self.position - self.overlap_vector) if k != 0 else pygame.Vector2(0, 0)
             self.position += self.offset * coeff
-            self.position = pygame.Vector2(max(0, min(self.position[0], collision_mask.get_size()[0]-1)), max(0, min(self.position[1], collision_mask.get_size()[1]-1)))
+            self.position = pygame.Vector2(max(0, min(self.position[0], collision_mask.get_size()[0] - 1)), max(0, min(self.position[1], collision_mask.get_size()[1] - 1)))
 
             if (k == 0):
                 break
-        
+
         self.prev_position = self.position
 
     def draw(self, buffer:pygame.Surface, debug_mode:bool, relative_position_of_what_im_drawing_on:pygame.Vector2) -> None:

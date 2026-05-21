@@ -1,5 +1,6 @@
 # Enviroment
 venv/
+.venv/
 
 # User-specific data
 saves/
