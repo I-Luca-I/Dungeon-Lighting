@@ -12,6 +12,8 @@ class Menu:
         self.default_dungeon = "Scegli un dungeon da caricare"
         self.default_save = "Scegli un save"
         self.default_entrance = "Scegli un\'entrata"
+        self.default_turn = "# turno"
+        self.default_time = "orario (H:M)"
 
         layout = [
             [sg.Frame("",
@@ -24,7 +26,7 @@ class Menu:
                         sg.Combo(self.saves, key="-SAVE-", default_value=self.default_save, readonly=True, enable_events=True, size=(33, 100)),
                         sg.Combo(self.entraces, key="-ENTRANCE-", default_value=self.default_entrance, readonly=True, enable_events=True, size=(33, 100))
                     ],
-                    [sg.Push(), sg.Button("START"), sg.Push()]
+                    [sg.Push(), sg.InputText(default_text=self.default_turn, key="-TURN-", size=6), sg.InputText(default_text=self.default_time, key="-TIME-", size=10), sg.Button("START"), sg.Push()]
                 ],
                 background_color="OrangeRed3", border_width=10, pad=(0, 0)
             )]
@@ -36,6 +38,8 @@ class Menu:
         id = ""
         save = ""
         entrance = ""
+        turn = ""
+        time = ""
 
         while True:
             event, values = self.window.read() # type: ignore
@@ -65,6 +69,8 @@ class Menu:
                 id = values["-DUNGEON-"]
                 save = values["-SAVE-"]
                 entrance = values["-ENTRANCE-"] if values["-ENTRANCE-"] != self.default_entrance else None
+                turn = int(values["-TURN-"]) if values["-TURN-"] != self.default_turn else 0
+                time = int(values["-TIME-"][0:values["-TIME-"].index(":")])*60 + int(values["-TIME-"][(values["-TIME-"].index(":")+1):len(values["-TIME-"])]) if values["-TIME-"] != self.default_time else 0
                 break
 
         self.window.close()
@@ -72,5 +78,7 @@ class Menu:
             "load_dungeon": load_dungeon,
             "id": id,
             "save": save,
-            "entrance": entrance
+            "entrance": entrance,
+            "turn": turn,
+            "time": time
         }

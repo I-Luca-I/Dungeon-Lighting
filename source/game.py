@@ -118,8 +118,8 @@ class Game:
             timer.reset()
             self.mouse_coords = (pygame.mouse.get_pos() - self.camera_offset) // self.zoom_factor
 
-            self.event_loop()
             self.clock.tick(60)
+            self.event_loop()
             timer.add_breakpoint("event_loop")
             
             if (pygame.display.get_surface().get_width() > self.dungeon.get_width()*self.zoom_factor or pygame.display.get_surface().get_height() > self.dungeon.get_height()*self.zoom_factor):
@@ -163,6 +163,7 @@ class Game:
 
             if (self.add_light_in_mouse_pos):
                 self.add_light_in_mouse_pos = False
+                self.dm_mode = False
                 instant_light = pawn.Pawn(position=pygame.Vector2(pygame.mouse.get_pos())//self.zoom_factor - self.camera_offset//self.zoom_factor, radius=30, img=pygame.Surface(size=(1,1)), size=1)
                 instant_light.update(self.collision_mask)
                 # instant_light.draw(self.camera_view, self.debug_mode, posizione_di_camera_view)
@@ -203,11 +204,11 @@ class Game:
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
 
-            print(f"Times: {timer.mid_printable}")
+            #print(f"Times: {timer.mid_printable}")
             #print("\033[1A", end="")
 
             # if (self.debug_mode):
-            print(f"FPS: {self.clock.get_fps()}")
+            #     print(f"FPS: {self.clock.get_fps()}")
             #     print(f"Mouse coords: {self.mouse_coords}")
             #     print(f"Party position: {self.party.position}")
             #     print(f"Camera offset: {self.camera_offset}")
