@@ -110,6 +110,7 @@ class Game:
         self.dungeon_changers = triggerables.DungeonChanger.get_dungeon_changers(self.dungeon_changers_mask, self.settings["dungeon_changers_data"])
 
         self.zones = zone.Zone.get_zones(self.number_of_zones, self.zones_encounter_freq, self.consumati_per_zona, self.turns, self.time, self.num_executed_turns, self.id)
+
         self.font = font.Font("assets/font.png")
 
     def run(self) -> tuple:
@@ -171,7 +172,7 @@ class Game:
                 instant_light_mask = pygame.mask.Mask(size=(instant_light.radius*2, instant_light.radius*2), fill=False)
                 mask.Masks.update_light(instant_light_mask, instant_light)
                 mask.Masks.draw_light_re(self.camera_view, self.camera_view_shadow_mask, instant_light_mask, instant_light, posizione_di_camera_view)
-                self.shadow_mask.draw(self.camera_view_shadow_mask, offset=posizione_di_camera_view)  # TODO: capire perchè non funziona anche se già modificato edit:(ho capito che riguarda self.dm_mode e l'acquisizione degli input da tastiera)
+                self.shadow_mask.draw(self.camera_view_shadow_mask, offset=posizione_di_camera_view)
 
             if (self.debug_mode):
                 for door in self.doors:
@@ -202,11 +203,16 @@ class Game:
             )
             screen.blit(source=self.frame, dest=(0, 0))
 
+            text1 = self.font.make_text_surface(str(self.current_zone.turns), size=111, big_numbers=True)  # PROVA PER IL DISPLAY DEL # TURNO E ORARIO
+            text2 = self.font.make_text_surface((str((self.current_zone.time // 60) % 24)) + ":" + str(self.current_zone.time - (self.current_zone.time // 60) * 60))
+            screen.blit(text1, (1704,120))
+            screen.blit(text2, (1710, 230))
+
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
 
-            #print(f"Times: {timer.mid_printable}")
-            #print("\033[1A", end="")
+            # print(f"Times: {timer.mid_printable}")
+            # print("\033[1A", end="")
 
             # if (self.debug_mode):
             #     print(f"FPS: {self.clock.get_fps()}")
