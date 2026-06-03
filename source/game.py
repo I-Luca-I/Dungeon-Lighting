@@ -1,5 +1,5 @@
 import pygame, json, os, datetime, math
-from . import pawn, mask, triggerables, time, zone
+from . import pawn, mask, triggerables, time, zone, font
 
 class Game:
     def __init__(self, id:str, save:str, entrance:str, turns:int, time:int, num_executed_turns:int) -> None:
@@ -110,7 +110,8 @@ class Game:
         self.dungeon_changers = triggerables.DungeonChanger.get_dungeon_changers(self.dungeon_changers_mask, self.settings["dungeon_changers_data"])
 
         self.zones = zone.Zone.get_zones(self.number_of_zones, self.zones_encounter_freq, self.consumati_per_zona, self.turns, self.time, self.num_executed_turns, self.id)
-    
+        self.font = font.Font("assets/font.png")
+
     def run(self) -> tuple:
         self.new_game_data = None
         timer = time.timer()
@@ -215,7 +216,7 @@ class Game:
             #     print("\033[4A", end="")
 
         self.quit()
-        return (self.new_game_data, self.current_zone.turns, self.current_zone.time, self.current_zone.num_executed_turns)
+        return (self.new_game_data, self.current_zone.turns, self.current_zone.time, self.current_zone.num_executed_turns) # type: ignore
 
     def event_loop(self) -> None:
         for event in pygame.event.get():
@@ -316,7 +317,7 @@ class Game:
 
                 ### Turn change
                 if event.key == pygame.K_SPACE:
-                    self.current_zone.turn_change()
+                    self.current_zone.turn_change() # type: ignore
 
                 ### DM mode
 
@@ -347,9 +348,9 @@ class Game:
                 if zone.mask.get_at(self.party.position):
                     self.current_zone = zone
             if self.previous_zone != self.current_zone and (self.previous_zone != None):
-                self.current_zone.time = self.previous_zone.time
-                self.current_zone.turns = self.previous_zone.turns
-                self.current_zone.num_executed_turns = self.previous_zone.num_executed_turns
+                self.current_zone.time = self.previous_zone.time # type: ignore
+                self.current_zone.turns = self.previous_zone.turns # type: ignore
+                self.current_zone.num_executed_turns = self.previous_zone.num_executed_turns # type: ignore
                                
     def move_camera(self, coords:pygame.Vector2) -> None:
         self.camera_offset[0] = pygame.display.get_surface().get_width()//2 - coords[0]*self.zoom_factor
