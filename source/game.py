@@ -203,10 +203,27 @@ class Game:
             )
             screen.blit(source=self.frame, dest=(0, 0))
 
-            text1 = self.font.make_text_surface(str(self.current_zone.turns), size=111, big_numbers=True)  # PROVA PER IL DISPLAY DEL # TURNO E ORARIO
-            text2 = self.font.make_text_surface((str((self.current_zone.time // 60) % 24)) + ":" + str(self.current_zone.time - (self.current_zone.time // 60) * 60))
+            # PROVA PER IL DISPLAY DEL # TURNO E ORARIO (TUTTO DA SPOSTARE IN FUTURO)
+            str1 = str(self.current_zone.turns)
+            if len(str1) > 1:
+                text1 = self.font.make_text_surface(str1, size=111, big_numbers=True)
+            else:
+                text1 = self.font.make_text_surface("0"+str1, size=111, big_numbers=True)
+            str2 = (str((self.current_zone.time // 60) % 24))
+            str3 = str(self.current_zone.time - (self.current_zone.time // 60) * 60)
+            if len(str2) > 1 and len(str3) > 1:
+                pass
+            elif len(str2) > 1:
+                str3 = "0"+str3
+            elif len(str3) > 1:
+                str2 = "0" + str2
+            else:
+                str2 = "0" + str2
+                str3 = "0" + str3
+            str2 = "day:" + str((self.current_zone.time // 60) // 24) + " " + str2 + ":" + str3
+            text2 = self.font.make_text_surface(str2, size=45)
             screen.blit(text1, (1704,120))
-            screen.blit(text2, (1710, 230))
+            screen.blit(text2, (1670, 230))
 
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")

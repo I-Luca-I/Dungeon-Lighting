@@ -32,17 +32,17 @@ class Font:
         surface_width = 0
         steps = [0]
         for char in string:
-            if char in "abcdefghijklmnopqrstuvwxyz " or (char in "0123456789" and not big_numbers):
+            if char in "abcdefghijklmnopqrstuvwxyz" or (char in "0123456789" and not big_numbers):
                 surface_width += 30*(size/60)
                 steps.append(30*(size/60))
             if char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" or (char in "0123456789" and big_numbers):
                 surface_width += 45*(size/60)
                 steps.append(45*(size/60))
-            if char in ".,;!?:()*+-/":
+            if char in ".,;!?:()*+-/ ":
                 surface_width += 15*(size/60)
                 steps.append(15*(size/60))
 
-        text_surface = pygame.Surface(size=(surface_width*(size/60), size), flags=pygame.SRCALPHA)
+        text_surface = pygame.Surface(size=(surface_width, size), flags=pygame.SRCALPHA)
         text_surface.fill((255,255,255,0))
         x_dest = 0
         i = 0
@@ -50,5 +50,4 @@ class Font:
             x_dest += steps[i]
             text_surface.blit(pygame.transform.scale_by(self.chars[number_for[char]], (size/60)), dest=(x_dest, 0))
             i += 1
-
         return text_surface
