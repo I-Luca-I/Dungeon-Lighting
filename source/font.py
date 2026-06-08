@@ -43,7 +43,7 @@ class Font:
                 steps.append(15*(size/60))
 
         text_surface = pygame.Surface(size=(surface_width, size), flags=pygame.SRCALPHA)
-        text_surface.fill((255,255,255,0))
+        text_surface.fill((255,255,255, 0))
         x_dest = 0
         i = 0
         for char in string:

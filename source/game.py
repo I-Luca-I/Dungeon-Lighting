@@ -34,9 +34,9 @@ class Game:
         icon = pygame.image.load("assets/icon.ico")
         
         ### Pygame setup
-        info = pygame.display.Info()
+        self.info = pygame.display.Info()
         pygame.display.set_mode(
-            (1000,700)#(info.current_w, info.current_h)
+            (self.info.current_w, self.info.current_h)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -106,7 +106,7 @@ class Game:
         self.collisions_surface = light_physics_collisions_img
         self.triggerables_surface = triggerables_img
         self.frame = pygame.surface.Surface(size=(frame_img.get_width(), frame_img.get_height()), flags=pygame.SRCALPHA)
-        self.frame.blit(pygame.transform.rotozoom(frame_img, 0, info.current_w/frame_img.get_width()), (0, 0))
+        self.frame.blit(pygame.transform.rotozoom(frame_img, 0, self.info.current_w/frame_img.get_width()), (0, 0))
 
         ### Masks
         self.collision_mask = mask.Masks.get_collision_mask(self.collisions_surface, pygame.Color(0, 0, 35))
@@ -132,11 +132,11 @@ class Game:
         self.font = font.Font("assets/font.png")
 
         self.GUIElements = []
-        prova_ui_element = triggerables.GUIElement({"default":self.font.make_text_surface("prova")}, {"default":pygame.mask.Mask(size=self.font.make_text_surface("prova").get_size(), fill=True)}, pygame.Vector2((10,10)), draggable=True)
+        prova_ui_element = triggerables.GUIElement({"default":self.font.make_text_surface("prova")}, {"default":pygame.mask.Mask(size=self.font.make_text_surface("prova").get_size(), fill=True)}, pygame.Vector2((10,10)), draggable=True) 
         self.GUIElements.append(prova_ui_element)
 
     def run(self) -> tuple:
-        self.new_game_data = None
+        self.new_game_data = None #type: ignore
         timer = time.timer()
         while self.running:
             timer.reset()
@@ -229,13 +229,14 @@ class Game:
                 element.draw(screen)
 
             # PROVA PER IL DISPLAY DEL # TURNO E ORARIO (TUTTO DA SPOSTARE IN FUTURO)
-            str1 = str(self.current_zone.turns)
+            str1 = str(self.current_zone.turns) #type: ignore
             if len(str1) > 1:
-                text1 = self.font.make_text_surface(str1, size=111, big_numbers=True)
+                text1 = self.font.make_text_surface(str1, size=111/1080*self.info.current_h, big_numbers=True)
             else:
-                text1 = self.font.make_text_surface("0"+str1, size=111, big_numbers=True)
-            str2 = (str((self.current_zone.time // 60) % 24))
-            str3 = str(self.current_zone.time - (self.current_zone.time // 60) * 60)
+                text1 = self.font.make_text_surface("0"+str1, size=111/1080*self.info.current_h, big_numbers=True)
+
+            str2 = (str((self.current_zone.time // 60) % 24)) #type: ignore
+            str3 = str(self.current_zone.time - (self.current_zone.time // 60) * 60) #type: ignore
             if len(str2) > 1 and len(str3) > 1:
                 pass
             elif len(str2) > 1:
@@ -245,10 +246,10 @@ class Game:
             else:
                 str2 = "0" + str2
                 str3 = "0" + str3
-            str2 = "day:" + str((self.current_zone.time // 60) // 24) + " " + str2 + ":" + str3
-            text2 = self.font.make_text_surface(str2, size=45)
-            screen.blit(text1, (1704,120))
-            screen.blit(text2, (1670, 230))
+            str2 = "day:" + str((self.current_zone.time // 60) // 24) + " " + str2 + ":" + str3 #type: ignore
+            text2 = self.font.make_text_surface(str2, size=45/1080*self.info.current_h)
+            screen.blit(text1, pygame.Vector2(1704/1920*self.info.current_w, 120/1080*self.info.current_h))
+            screen.blit(text2, pygame.Vector2(1670/1920*self.info.current_w, 230/1080*self.info.current_h))
 
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
