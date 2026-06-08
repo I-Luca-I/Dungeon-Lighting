@@ -36,7 +36,7 @@ class Game:
         ### Pygame setup
         info = pygame.display.Info()
         pygame.display.set_mode(
-            (info.current_w, info.current_h)
+            (1000,700)#(info.current_w, info.current_h)
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -51,8 +51,27 @@ class Game:
         pygame.display.set_icon(icon)
 
         ### Game setup
-        cursor_normal_img = pygame.transform.rotozoom(cursor_normal_img, 315, 100/cursor_normal_img.get_width())
-        cursor_interact_img = pygame.transform.rotozoom(cursor_interact_img, 315, 100/cursor_interact_img.get_width())
+        def create_cursor_surface(surface:pygame.Surface) -> pygame.Surface:
+            cursor_surf = surface.copy()
+            cursor_surf.set_colorkey((0, 0, 0))
+            width = cursor_surf.get_width()
+            height = cursor_surf.get_height()
+
+            if width % 8 != 0:
+                new_width = ((width // 8) + 1) * 8
+                padded_surf = pygame.Surface((new_width, height), pygame.SRCALPHA)
+                padded_surf.fill((0, 0, 0, 0))
+                padded_surf.blit(cursor_surf, (0, 0))
+                cursor_surf = padded_surf
+            return cursor_surf
+
+        cursor_normal_img = pygame.transform.rotozoom(cursor_normal_img, 315, 100 / cursor_normal_img.get_width())
+        cursor_interact_img = pygame.transform.rotozoom(cursor_interact_img, 315, 100 / cursor_interact_img.get_width())
+        cursor_normal_img = create_cursor_surface(cursor_normal_img)
+        cursor_interact_img = create_cursor_surface(cursor_interact_img)
+        cursor_door_open_img = create_cursor_surface(cursor_door_open_img)
+        cursor_door_close_img = create_cursor_surface(cursor_door_close_img)
+        cursor_stairs_img = create_cursor_surface(cursor_stairs_img)
         self.cursors = {
             "normal": pygame.cursors.Cursor((7, 28), cursor_normal_img),
             "interact": pygame.cursors.Cursor((7, 28), cursor_interact_img),
@@ -60,7 +79,6 @@ class Game:
             "close_door": pygame.cursors.Cursor((7, 28), cursor_door_close_img),
             "stairs": pygame.cursors.Cursor((7, 28), cursor_stairs_img)
         }
-        pygame.mouse.set_cursor(self.cursors["normal"])
 
         self.party = pawn.Pawn(
             position=self.settings["party_position"] if(self.entrance == None) else self.settings["entrances"][self.entrance],
@@ -112,6 +130,10 @@ class Game:
         self.zones = zone.Zone.get_zones(self.number_of_zones, self.zones_encounter_freq, self.consumati_per_zona, self.turns, self.time, self.num_executed_turns, self.id)
 
         self.font = font.Font("assets/font.png")
+
+        self.GUIElements = []
+        prova_ui_element = triggerables.GUIElement({"default":self.font.make_text_surface("prova")}, {"default":pygame.mask.Mask(size=self.font.make_text_surface("prova").get_size(), fill=True)}, pygame.Vector2((10,10)), draggable=True)
+        self.GUIElements.append(prova_ui_element)
 
     def run(self) -> tuple:
         self.new_game_data = None
@@ -195,13 +217,16 @@ class Game:
                 
                 pygame.draw.circle(self.camera_view, (0, 255, 0), (self.mouse_coords - posizione_di_camera_view), 1, 1)
 
-            ### Print buffer and frame on screen
+            ### Print camera_view and frame on screen
             screen = pygame.display.get_surface()
             screen.blit(
                source=pygame.transform.scale_by(surface=self.camera_view, factor=self.zoom_factor),    #pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
                dest=(0, 0)                                                                             #self.camera_offset
             )
             screen.blit(source=self.frame, dest=(0, 0))
+
+            for element in self.GUIElements:
+                element.draw(screen)
 
             # PROVA PER IL DISPLAY DEL # TURNO E ORARIO (TUTTO DA SPOSTARE IN FUTURO)
             str1 = str(self.current_zone.turns)
@@ -244,6 +269,8 @@ class Game:
     def event_loop(self) -> None:
         for event in pygame.event.get():
             self.party.handle_events(event, self.mouse_coords, self.physics_collision_mask)
+            for element in self.GUIElements:
+                element.handle_events(event, pygame.Vector2(pygame.mouse.get_pos()))
 
             ### Quit
             if event.type == pygame.QUIT:
@@ -256,7 +283,7 @@ class Game:
                 pygame.mouse.set_cursor(self.cursors["normal"])
 
             ### Screen scrolling
-            if pygame.mouse.get_pressed()[0] and not self.party.moving and not self.dm_mode:
+            if pygame.mouse.get_pressed()[0] and not self.party.moving and not self.dm_mode and True not in [guielement.states["being_dragged"] for guielement in self.GUIElements]:
                 if not self.scrolling:
                     self.scrolling = True
                     self.previous_mouse_pos = pygame.mouse.get_pos()
