@@ -65,44 +65,6 @@ class Triggerable:
         return instances_list
 
 
-class GUIElement(Triggerable):
-    def __init__(self, surfaces:dict[str:pygame.Surface, str:list[pygame.Surface]], masks:dict[str:pygame.Mask], coord:pygame.Vector2, draggable:bool, sub_elements=()):
-        super(GUIElement, self).__init__(masks, coord, states={"being_dragged":False, "been_clicked":False, "draggable":draggable})
-        self.current_mask:pygame.Mask = self.masks["default"]
-        self.surfaces:dict[str:pygame.Surface, str:list[pygame.Surface]] = surfaces
-        self.current_surface:pygame.Surface = self.surfaces["default"]
-        self.sub_elements:tuple[GUIElement] = sub_elements
-
-    def trigger(self):
-        print("!")
-
-    def drag(self, mouse_coords:pygame.Vector2, mouse_offset:pygame.Vector2):
-        self.coord = mouse_coords + mouse_offset
-
-    def handle_events(self, event:pygame.event.Event, mouse_coords:pygame.Vector2):
-        x, y = mouse_coords - self.coord
-        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.states["draggable"] and 0 <= x <= self.current_surface.get_size()[0] and 0 <= y <= self.current_surface.get_size()[1] and not self.states["being_dragged"]):
-            if self.current_mask.get_at((x,y)):
-                self.states["being_dragged"] = True
-                self.mouse_offset = self.coord - mouse_coords
-        elif (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
-            self.states["being_dragged"] = False
-
-        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 3) and 0 <= x <= self.current_surface.get_size()[0] and 0 <= y <= self.current_surface.get_size()[1]:
-            self.states["being_dragged"] = False
-            self.states["been_clicked"] = True
-
-        # chiamo i metodi appropriati (in base a sopra ^)
-        if self.states["being_dragged"]:
-            self.drag(mouse_coords, self.mouse_offset)
-        if self.states["been_clicked"]:
-            self.states["been_clicked"] = False
-            self.trigger()
-
-    def draw(self, buffer:pygame.Surface):
-        buffer.blit(self.current_surface, dest=self.coord)
-
-
 class DungeonChanger(Triggerable):
     def trigger(self) -> dict:
         files = os.listdir(f"saves/dungeon_{self.states['destination']['id']}")

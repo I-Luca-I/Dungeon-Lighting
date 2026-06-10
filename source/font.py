@@ -22,7 +22,7 @@ class Font:
         for char in ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
                      "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
                      "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7",
-                     "8", "9", ".", ",", ";", "!", "?", ":", "(", ")", "*", "+", "-", "/", " "]:
+                     "8", "9", ".", ",", ";", "!", "?", ":", "(", ")", "*", "+", "-", "/", "N/A", "N/A", "N/A", " "]:
             if char in "0123456789" and not big_numbers:
                 number_for.update({char: (i+25)})
             else:
@@ -43,7 +43,7 @@ class Font:
                 steps.append(15*(size/60))
 
         text_surface = pygame.Surface(size=(surface_width, size), flags=pygame.SRCALPHA)
-        text_surface.fill((255,255,255, 0))
+        text_surface.fill((255,255,255,0))
         x_dest = 0
         i = 0
         for char in string:

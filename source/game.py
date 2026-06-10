@@ -1,5 +1,5 @@
 import pygame, json, os, datetime, math
-from . import pawn, mask, triggerables, time, zone, font
+from . import pawn, mask, triggerables, time, zone, font, guielement
 
 class Game:
     def __init__(self, id:str, save:str, entrance:str, turns:int, time:int, num_executed_turns:int) -> None:
@@ -36,6 +36,7 @@ class Game:
         ### Pygame setup
         self.info = pygame.display.Info()
         pygame.display.set_mode(
+            #(1000,700)
             (self.info.current_w, self.info.current_h)
         )
         self.clock = pygame.time.Clock()
@@ -131,9 +132,7 @@ class Game:
 
         self.font = font.Font("assets/font.png")
 
-        self.GUIElements = []
-        prova_ui_element = triggerables.GUIElement({"default":self.font.make_text_surface("prova")}, {"default":pygame.mask.Mask(size=self.font.make_text_surface("prova").get_size(), fill=True)}, pygame.Vector2((10,10)), draggable=True) 
-        self.GUIElements.append(prova_ui_element)
+        self.GUIElements = guielement.GUIElement.make_GUIElements()
 
     def run(self) -> tuple:
         self.new_game_data = None #type: ignore
@@ -223,10 +222,13 @@ class Game:
                source=pygame.transform.scale_by(surface=self.camera_view, factor=self.zoom_factor),    #pygame.transform.scale_by(surface=buffer, factor=self.zoom_factor), # SLOOOOOW
                dest=(0, 0)                                                                             #self.camera_offset
             )
-            screen.blit(source=self.frame, dest=(0, 0))
 
             for element in self.GUIElements:
+                element.handle_events(pygame.Vector2(pygame.mouse.get_pos()))
+            for element in self.GUIElements:
                 element.draw(screen)
+
+            screen.blit(source=self.frame, dest=(0, 0))
 
             # PROVA PER IL DISPLAY DEL # TURNO E ORARIO (TUTTO DA SPOSTARE IN FUTURO)
             str1 = str(self.current_zone.turns) #type: ignore
@@ -271,7 +273,7 @@ class Game:
         for event in pygame.event.get():
             self.party.handle_events(event, self.mouse_coords, self.physics_collision_mask)
             for element in self.GUIElements:
-                element.handle_events(event, pygame.Vector2(pygame.mouse.get_pos()))
+                element.handle_events(pygame.Vector2(pygame.mouse.get_pos()), event)
 
             ### Quit
             if event.type == pygame.QUIT:
