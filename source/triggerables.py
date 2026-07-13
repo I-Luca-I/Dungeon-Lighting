@@ -19,28 +19,24 @@ class Triggerable:
     @staticmethod
     def get_big_mask(surface:pygame.Surface, color:tuple) -> pygame.Mask:
         big_mask = pygame.mask.Mask(size=surface.get_size(), fill=False)
-        big_mask.draw(pygame.mask.from_threshold(surface, color, (1, 1, 1, 1)), (0, 0))
+        big_mask.draw(pygame.mask.from_threshold(surface, color, (1,1,1,1)), (0,0))
         return big_mask
 
     @staticmethod
     def get_instances_list(big_mask, starting_states_dict) -> list:
         instances_list = []
         acc = 20
-        step = 15
+        step = 1
         disposable_mask = pygame.mask.Mask(size=(acc, acc), fill=True)
-        last_size = [acc, acc]
-        temp_size = [acc, acc]
+        last_size = pygame.Vector2(acc, acc)
+        temp_size = pygame.Vector2(acc, acc)
         for i in range(big_mask.get_size()[1] // acc):
             for j in range(big_mask.get_size()[0] // acc):
                 if big_mask.overlap_area(disposable_mask, (j * acc, i * acc)):
-                    temp_size = [temp_size[0], temp_size[1] + step]
-                    while (big_mask.overlap_area(pygame.mask.Mask(temp_size, fill=True),(j * acc, i * acc)) - big_mask.overlap_area(pygame.mask.Mask(last_size, fill=True), (j * acc, i * acc))):
+                    temp_size = temp_size + pygame.Vector2(step, step)
+                    while (big_mask.overlap_area(pygame.mask.Mask(temp_size, fill=True),(j * acc, i * acc)) - big_mask.overlap_area(pygame.mask.Mask(last_size, fill=True), (j * acc, i * acc))) > 0:
                         last_size = temp_size
-                        temp_size = [temp_size[0], temp_size[1] + step]
-                    temp_size = [temp_size[0] + step, temp_size[1]]
-                    while (big_mask.overlap_area(pygame.mask.Mask(temp_size, fill=True),(j * acc, i * acc)) - big_mask.overlap_area(pygame.mask.Mask(last_size, fill=True), (j * acc, i * acc))):
-                        last_size = temp_size
-                        temp_size = [temp_size[0] + step, temp_size[1]]
+                        temp_size = temp_size + pygame.Vector2(step,step)
                     instance = Triggerable({"main_mask": pygame.mask.Mask(size=temp_size, fill=False)}, pygame.Vector2(j * acc, i * acc), dict(starting_states_dict))
                     instance.masks["main_mask"].draw(big_mask, (j * -acc, i * -acc))
                     instances_list.append(instance)
@@ -85,7 +81,11 @@ class DungeonChanger(Triggerable):
         for instance in Triggerable.get_instances_list(changers_mask, starting_states_dict={"destination": {"id": None, "entrance": None}, "cursor": None}):
             dungeon_changers.append(DungeonChanger(masks=instance.masks, coord=instance.coord, states=instance.states))
         for changer in dungeon_changers:
-            changer.states = changers_data[dungeon_changers.index(changer)]
+            try :
+                changer.states = changers_data[dungeon_changers.index(changer)]
+            except IndexError:
+                print(dungeon_changers)
+                print(changers_data)
         return dungeon_changers
 
 

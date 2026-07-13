@@ -121,12 +121,21 @@ class Game:
         ### Triggerables and other game objects
         self.door_mask = triggerables.Door.get_door_mask(self.triggerables_surface)
         self.doors = triggerables.Door.get_doors(self.door_mask)
+        self.door_mask = pygame.Mask(size=self.door_mask.get_size(), fill=False)
+        for door in self.doors:
+            self.door_mask.draw(door.masks["main_mask"], door.coord)
 
         self.stairs_mask = triggerables.Stairs.get_stairs_mask(self.triggerables_surface)
         self.stairs = triggerables.Stairs.get_stairs(self.stairs_mask)
+        self.stairs_mask = pygame.Mask(size=self.stairs_mask.get_size(), fill=False)
+        for stairs in self.stairs:
+            self.stairs_mask.draw(stairs.masks["main_mask"], stairs.coord)
 
         self.dungeon_changers_mask = triggerables.DungeonChanger.get_changers_mask(self.triggerables_surface)
         self.dungeon_changers = triggerables.DungeonChanger.get_dungeon_changers(self.dungeon_changers_mask, self.settings["dungeon_changers_data"])
+        self.dungeon_changers_mask = pygame.Mask(size=self.dungeon_changers_mask.get_size(), fill=False)
+        for dungeon_changer in self.dungeon_changers:
+            self.dungeon_changers_mask.draw(dungeon_changer.masks["main_mask"], dungeon_changer.coord)
 
         self.zones = zone.Zone.get_zones(self.number_of_zones, self.zones_encounter_freq, self.consumati_per_zona, self.turns, self.time, self.num_executed_turns, self.id)
 
@@ -173,8 +182,10 @@ class Game:
             mask.Masks.update_light(self.light_mask, self.party)
             timer.add_breakpoint("light_upd")
 
+
             posizione_di_camera_view = -((self.camera_offset) / self.zoom_factor)
             mask.Masks.draw_light_re(self.camera_view, self.camera_view_shadow_mask, self.light_mask, self.party, posizione_di_camera_view)
+
             if not self.chase_mode:
                 self.shadow_mask.draw(self.camera_view_shadow_mask, offset=posizione_di_camera_view)
             # mask.Masks.draw_light(buffer, self.shadow_mask, self.light_mask, self.party)
@@ -196,6 +207,7 @@ class Game:
                 self.shadow_mask.draw(self.camera_view_shadow_mask, offset=posizione_di_camera_view)
 
             if (self.debug_mode):
+                # self.camera_view.blit(self.door_mask.to_surface(), self.camera_offset//self.zoom_factor)
                 for door in self.doors:
                     if door.states["is_open"]:
                         self.camera_view.blit(source=door.masks["main_mask"].to_surface(setcolor=(0, 255, 255), unsetcolor=None), dest=(door.coord - posizione_di_camera_view))
@@ -203,6 +215,9 @@ class Game:
                         self.camera_view.blit(source=door.masks["main_mask"].to_surface(setcolor=(0, 0, 255), unsetcolor=None), dest=(door.coord - posizione_di_camera_view))
                 for stairs in self.stairs:
                     self.camera_view.blit(source=stairs.masks["main_mask"].to_surface(setcolor=(255, 128, 0), unsetcolor=None), dest=(stairs.coord - posizione_di_camera_view))
+
+                for dungeon_changer in self.dungeon_changers:
+                    self.camera_view.blit(source=dungeon_changer.masks["main_mask"].to_surface(setcolor=(255, 255, 0), unsetcolor=None), dest=(dungeon_changer.coord - posizione_di_camera_view))
 
                 # pygame.draw.line(buffer, (0, 255, 0), self.party.position, self.mouse_coords)
                 
@@ -256,8 +271,8 @@ class Game:
             pygame.display.flip()
             timer.add_breakpoint("buffer+frame_drw")
 
-            # print(f"Times: {timer.mid_printable}")
-            # print("\033[1A", end="")
+            print(f"Times: {timer.mid_printable}")
+            print("\033[1A", end="")
 
             # if (self.debug_mode):
             #     print(f"FPS: {self.clock.get_fps()}")
@@ -301,13 +316,9 @@ class Game:
             ### Door interaction
             if triggerables.Door.check_click(self.door_mask, self.shadow_mask, self.mouse_coords) and not self.party.moving:
                 ### finding closest door
-                closest_door = self.doors[0]
-                smaller_distance = abs(self.mouse_coords[0] - closest_door.coord[0]) + abs(self.mouse_coords[1] - closest_door.coord[1])
-                for adoor in self.doors:
-                    if smaller_distance == 0 or abs(self.mouse_coords[0] - adoor.coord[0]) + abs(self.mouse_coords[1] - adoor.coord[1]) < smaller_distance:
-                        smaller_distance = abs(self.mouse_coords[0] - adoor.coord[0]) + abs(self.mouse_coords[1] - adoor.coord[1])
-                        closest_door = adoor
-
+                for door in self.doors:
+                    if 0 <= (self.mouse_coords - door.coord)[0] <= door.masks["main_mask"].get_size()[0] and 0 <= (self.mouse_coords - door.coord)[1] <= door.masks["main_mask"].get_size()[1] and door.masks["main_mask"].get_at(self.mouse_coords - door.coord):
+                        closest_door = door
                 ### door cursor state
                 cursor = self.cursors["door"] if not(closest_door.states["is_open"]) else self.cursors["close_door"]
                 pygame.mouse.set_cursor(cursor)
@@ -318,11 +329,8 @@ class Game:
             ### Stairs interaction
             if triggerables.Stairs.check_click(self.stairs_mask, self.shadow_mask, self.mouse_coords) and triggerables.Stairs.check_click(self.stairs_mask, self.shadow_mask, self.party.position) and not self.party.moving:
                 ### finding closest stairs
-                closest_stairs = self.stairs[0]
-                smaller_distance = abs(self.mouse_coords[0] - closest_stairs.coord[0]) + abs(self.mouse_coords[1] - closest_stairs.coord[1])
                 for stairs in self.stairs:
-                    if smaller_distance == 0 or abs(self.mouse_coords[0] - stairs.coord[0]) + abs(self.mouse_coords[1] - stairs.coord[1]) < smaller_distance:
-                        smaller_distance = abs(self.mouse_coords[0] - stairs.coord[0]) + abs(self.mouse_coords[1] - stairs.coord[1])
+                    if 0 <= (self.mouse_coords - stairs.coord)[0] <= stairs.masks["main_mask"].get_size()[0] and 0 <= (self.mouse_coords - stairs.coord)[1] <= stairs.masks["main_mask"].get_size()[1] and stairs.masks["main_mask"].get_at(self.mouse_coords - stairs.coord):
                         closest_stairs = stairs
                 ### stairs cursor state
                 cursor = self.cursors["stairs"]
@@ -335,18 +343,15 @@ class Game:
             ### DungeonChanger interaction
             if triggerables.DungeonChanger.check_click(self.dungeon_changers_mask, self.shadow_mask, self.mouse_coords) and not self.party.moving:
                 ### finding closest dungeon changer
-                closest_dungeon_changers = self.dungeon_changers[0]
-                smaller_distance = abs(self.mouse_coords[0] - closest_dungeon_changers.coord[0]) + abs(self.mouse_coords[1] - closest_dungeon_changers.coord[1])
                 for dungeon_changer in self.dungeon_changers:
-                    if smaller_distance == 0 or abs(self.mouse_coords[0] - dungeon_changer.coord[0]) + abs(self.mouse_coords[1] - dungeon_changer.coord[1]) < smaller_distance:
-                        smaller_distance = abs(self.mouse_coords[0] - dungeon_changer.coord[0]) + abs(self.mouse_coords[1] - dungeon_changer.coord[1])
-                        closest_dungeon_changers = dungeon_changer
+                    if 0 <= (self.mouse_coords - dungeon_changer.coord)[0] <= dungeon_changer.masks["main_mask"].get_size()[0] and 0 <= (self.mouse_coords - dungeon_changer.coord)[1] <= dungeon_changer.masks["main_mask"].get_size()[1] and dungeon_changer.masks["main_mask"].get_at(self.mouse_coords - dungeon_changer.coord):
+                        closest_dungeon_changer = dungeon_changer
                 ### dungeon_changer cursor state
-                cursor = self.cursors[closest_dungeon_changers.states["cursor"]]
+                cursor = self.cursors[closest_dungeon_changer.states["cursor"]]
                 pygame.mouse.set_cursor(cursor)
                 ### dungeon_changer trigger
                 if pygame.mouse.get_pressed()[0]:
-                    self.new_game_data = closest_dungeon_changers.trigger()
+                    self.new_game_data = closest_dungeon_changer.trigger()
                     self.running = False
 
             if event.type == pygame.KEYDOWN:

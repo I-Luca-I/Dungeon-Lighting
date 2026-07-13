@@ -31,7 +31,6 @@ class Zone:
         text = None
         if (rand == 1 and self.rimanenti != self.rcheck):
             rand = random.randrange(len(self.sheet))
-            # print(self.rimanenti)
             while (self.rimanenti[rand] <= 0.0):
                 rand = random.randrange(len(self.sheet))
             row = self.sheet[rand]
@@ -41,7 +40,6 @@ class Zone:
                 n_apparsi = random.randrange(int(float(row[3])), int(self.rimanenti[rand]) + 1)
             else:
                 n_apparsi = int(self.rimanenti[rand])
-            # print(str(rand) + " " + str(n_apparsi))
             self.rimanenti[rand] -= n_apparsi
             text = row[0] + ") " + str(n_apparsi) + " " + row[1]
         print("turno:" + str(self.turns) + " tempo:" + (str((self.time // 60) % 24)) + ":" + str(self.time - (self.time // 60) * 60))

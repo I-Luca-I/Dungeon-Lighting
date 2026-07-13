@@ -58,8 +58,8 @@ class Masks:
 
     @staticmethod
     def draw_light_re(buffer:pygame.surface.Surface, shadow_mask:pygame.Mask, light_mask:pygame.Mask, pawn:pawn.Pawn, camera_view_coord:pygame.Vector2):
-        top_right_of_light_mask_position = pawn.position - camera_view_coord - pygame.Vector2([pawn.radius, pawn.radius])
-        shadow_mask.erase(light_mask, top_right_of_light_mask_position)
+        light_mask_position = pawn.position - camera_view_coord - pygame.Vector2([pawn.radius, pawn.radius])
+        shadow_mask.erase(light_mask, light_mask_position)
         shadow_surf = shadow_mask.to_surface(setcolor=(0, 0, 0, 125), unsetcolor=None)
-        shadow_mask.draw(light_mask, top_right_of_light_mask_position)
+        shadow_mask.draw(light_mask, light_mask_position)
         buffer.blit(source=shadow_mask.to_surface(setsurface=shadow_surf, unsetcolor=(0, 0, 0)), dest=(0, 0))
